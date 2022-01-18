@@ -1,25 +1,36 @@
 #ifndef _H_APPLICATION
 #define _H_APPLICATION
 
+#include <GLFW/glfw3.h>
 #include "nanovg/src/nanovg.h"
 
 typedef struct {
-	int winWidth, winHeight;
+  // Width and height of the window
+	int width, height;
+  // Width and height of the framebuffer
 	int fbWidth, fbHeight;
+  // The ratio of framebuffer width / window width for hi-dpi devices.
 	float pxRatio;
 } WindowInfo;
 
-typedef struct ApplicationState ApplicationState;
+typedef struct {
+  double x;
+  double y;
+} DPoint;
 
-ApplicationState *application_create(void);
+typedef struct AppContext {
+	GLFWwindow *glWindow;
+	NVGcontext *vg;
+  WindowInfo window;
+  DPoint cursor;
+} AppContext;
+
+AppContext *application_create(void);
 void application_loop(
-  ApplicationState *state,
-  void(*draw)(ApplicationState*, void *),
+  AppContext *state,
+  void(*draw)(AppContext*, void *),
   void * data
 );
-void application_free(ApplicationState *state);
-
-NVGcontext *application_vg(ApplicationState *state);
-WindowInfo application_wininfo(struct ApplicationState *state);
+void application_free(AppContext *state);
 
 #endif

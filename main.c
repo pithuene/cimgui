@@ -72,30 +72,27 @@ void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, floa
 	nvgFill(vg);
 }
 
-void draw(ApplicationState *app, void * data) {
-  WindowInfo wininfo = application_wininfo(app);
-  NVGcontext *vg = application_vg(app);
+void draw(AppContext *app, void * data) {
+  drawEyes(app->vg, app->window.width - 250, 50, 150, 100, 0, 0, 0);
 
-  drawEyes(vg, wininfo.winWidth - 250, 50, 150, 100, 0, 0, 0);
+  nvgBeginPath(app->vg);
+  nvgRect(app->vg, app->cursor.x, app->cursor.y, 30, 30);
+  nvgFillColor(app->vg, nvgRGBA(255,192,0,255));
+  nvgFill(app->vg);
 
-  nvgBeginPath(vg);
-  nvgRect(vg, 100, 100, 120, 30);
-  nvgFillColor(vg, nvgRGBA(255,192,0,255));
-  nvgFill(vg);
-
-	nvgFontSize(vg, 20);
-	nvgFontFace(vg, "sans");
-	nvgFillColor(vg, nvgRGBA(255,255,255,255));
-	nvgTextAlign(vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(vg, 200,100,"Hello World", NULL);
+	nvgFontSize(app->vg, 20);
+	nvgFontFace(app->vg, "sans");
+	nvgFillColor(app->vg, nvgRGBA(255,255,255,255));
+	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+	nvgText(app->vg, 200,100,"Hello World", NULL);
 }
 
 int main(void) {
   int counter = 5;
 
-  ApplicationState *app = application_create();
+  AppContext *app = application_create();
 
-	fontNormal = nvgCreateFont(application_vg(app), "sans", "nanovg/example/Roboto-Regular.ttf");
+	fontNormal = nvgCreateFont(app->vg, "sans", "nanovg/example/Roboto-Regular.ttf");
 	if (fontNormal == -1) {
 		printf("Could not add font italic.\n");
 		return -1;

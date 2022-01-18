@@ -10,29 +10,15 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
 
-struct ApplicationState {
-	GLFWwindow *window;
-	NVGcontext *vg;
-  WindowInfo winInfo;
-};
-
-NVGcontext *application_vg(struct ApplicationState *state) {
-  return state->vg;
-}
-
-WindowInfo application_wininfo(struct ApplicationState *state) {
-  return state->winInfo;
-}
-
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
-static void key(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void key(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
 	NVG_NOTUSED(scancode);
 	NVG_NOTUSED(mods);
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
+		glfwSetWindowShouldClose(glWindow, GL_TRUE);
 	/*if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		blowup = !blowup;
 	if (key == GLFW_KEY_S && action == GLFW_PRESS)
@@ -41,10 +27,10 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		premult = !premult;*/
 }
 
-struct ApplicationState *application_create(void) {
-  struct ApplicationState *state = malloc(sizeof(struct ApplicationState));
-  *state = (struct ApplicationState){
-	  .window = NULL,
+struct AppContext *application_create(void) {
+  struct AppContext *state = malloc(sizeof(struct AppContext));
+  *state = (struct AppContext){
+	  .glWindow = NULL,
 	  .vg = NULL,
   };
 
@@ -66,17 +52,17 @@ struct ApplicationState *application_create(void) {
 #ifdef DEMO_MSAA
 	glfwWindowHint(GLFW_SAMPLES, 4);
 #endif
-	state->window = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
-//	window = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
-	if (!state->window) {
+	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
+//	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
+	if (!state->glWindow) {
 		glfwTerminate();
 		printf("Failed to create window.");
     exit(1);
 	}
 
-	glfwSetKeyCallback(state->window, key);
+	glfwSetKeyCallback(state->glWindow, key);
 
-	glfwMakeContextCurrent(state->window);
+	glfwMakeContextCurrent(state->glWindow);
 #ifdef NANOVG_GLEW
 	glewExperimental = GL_TRUE;
 	if(glewInit() != GLEW_OK) {
@@ -99,14 +85,14 @@ struct ApplicationState *application_create(void) {
 	return state;
 }
 
-void application_loop(struct ApplicationState *state, void(*draw)(struct ApplicationState*, void *), void * data) {
+void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, void *), void * data) {
 	double prevt = 0;
 	glfwSwapInterval(0);
 
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
-	while (!glfwWindowShouldClose(state->window))
+	while (!glfwWindowShouldClose(state->glWindow))
 	{
 		double mx, my, t, dt;
 		int winWidth, winHeight;
@@ -119,9 +105,9 @@ void application_loop(struct ApplicationState *state, void(*draw)(struct Applica
 		dt = t - prevt;
 		prevt = t;
 
-		glfwGetCursorPos(state->window, &mx, &my);
-		glfwGetWindowSize(state->window, &winWidth, &winHeight);
-		glfwGetFramebufferSize(state->window, &fbWidth, &fbHeight);
+		glfwGetCursorPos(state->glWindow, &mx, &my);
+		glfwGetWindowSize(state->glWindow, &winWidth, &winHeight);
+		glfwGetFramebufferSize(state->glWindow, &fbWidth, &fbHeight);
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
@@ -132,13 +118,14 @@ void application_loop(struct ApplicationState *state, void(*draw)(struct Applica
 
 		nvgBeginFrame(state->vg, winWidth, winHeight, pxRatio);
 
-    state->winInfo = (WindowInfo){
-      .winHeight = winHeight,
-      .winWidth = winWidth,
+    state->window = (WindowInfo){
+      .height = winHeight,
+      .width = winWidth,
       .fbHeight = fbHeight,
       .fbWidth = fbWidth,
       .pxRatio = pxRatio
     };
+    state->cursor = (DPoint){mx, my};
 
     // Call the draw function
     (*draw)(state, data);
@@ -151,12 +138,12 @@ void application_loop(struct ApplicationState *state, void(*draw)(struct Applica
     double frameTime = (endTime - t) * 1000000;
     usleep(targetFrameTime - frameTime);
 
-		glfwSwapBuffers(state->window);
+		glfwSwapBuffers(state->glWindow);
 		glfwPollEvents();
 	}
 }
 
-void application_free(struct ApplicationState *state) {
+void application_free(struct AppContext *state) {
 	nvgDeleteGL3(state->vg);
 	glfwTerminate();
   free(state);
