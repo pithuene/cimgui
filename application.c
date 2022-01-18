@@ -9,6 +9,11 @@
 #include <unistd.h>
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
+#include "ds/mem/arenaalloc.h"
+
+// Holds per frame data like events
+// Freed after every frame
+arena_allocator_t frameArena;
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -33,6 +38,9 @@ struct AppContext *application_create(void) {
 	  .glWindow = NULL,
 	  .vg = NULL,
   };
+
+  // TODO: It should be easier to use a sensible default like pagesize
+  frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -139,6 +147,9 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
     usleep(targetFrameTime - frameTime);
 
 		glfwSwapBuffers(state->glWindow);
+
+    arena_allocator_reset(&frameArena);
+
 		glfwPollEvents();
 	}
 }
