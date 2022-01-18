@@ -1,3 +1,6 @@
 [submodule "nanovg"]
 	path = nanovg
 	url = https://github.com/memononen/nanovg.git
+[submodule "ds"]
+	path = ds
+	url = git@github.com:pithuene/ds.git
