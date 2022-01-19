@@ -21,6 +21,10 @@ void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
+static void mousebutton(GLFWwindow* glWindow, int button, int action, int mods) {
+  eventqueue_enqueue(&eventqueue, mousebutton_event(button, action, mods));
+}
+
 static void key(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
   eventqueue_enqueue(&eventqueue, key_event(key, scancode, action, mods));
   
@@ -78,7 +82,9 @@ struct AppContext *application_create(void) {
     exit(1);
 	}
 
+  /* Set callbacks */
 	glfwSetKeyCallback(state->glWindow, key);
+  glfwSetMouseButtonCallback(state->glWindow, mousebutton);
 
 	glfwMakeContextCurrent(state->glWindow);
 #ifdef NANOVG_GLEW

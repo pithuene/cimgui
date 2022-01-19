@@ -85,12 +85,27 @@ void draw(AppContext *app, void * data) {
   nvgFillColor(app->vg, nvgRGBA(255,192,0,255));
   nvgFill(app->vg);
 
+  static NVGcolor rectColor = (NVGcolor){.r = 255, .g = 192, .b = 0, .a = 255};
+
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputKeyEvent && event.instance.key.action == GLFW_PRESS) {
       text[textlen] = event.instance.key.key;
       textlen++;
+    } else if (event.type == InputMouseButtonEvent ) {
+      if (event.instance.mousebutton.action == GLFW_PRESS &&
+          app->cursor.x > 400 && app->cursor.x < 430 &&
+          app->cursor.y > 200 && app->cursor.y < 230) {
+        rectColor = (NVGcolor){.r = 0, .g = 255, .b = 0, .a = 255};
+      } else {
+        rectColor = (NVGcolor){.r = 255, .g = 192, .b = 0, .a = 255};
+      }
     }
   }
+
+  nvgBeginPath(app->vg);
+  nvgRect(app->vg, 400, 200, 30, 30);
+  nvgFillColor(app->vg, rectColor);
+  nvgFill(app->vg);
 
   /* Print number of arena containers */
   char arena_containers[30];

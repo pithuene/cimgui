@@ -11,19 +11,28 @@ typedef struct {
   int mods;
 } KeyEvent;
 
+typedef struct {
+  int button;
+  int action;
+  int mods;
+} MouseButtonEvent;
+
 typedef enum {
   InputKeyEvent,
+  InputMouseButtonEvent,
 } InputEventType;
 
 typedef struct {
   InputEventType type;
   union {
     KeyEvent key;
+    MouseButtonEvent mousebutton;
   } instance;
 } InputEvent;
 
 // TODO: Naming?
 InputEvent key_event(int key, int scancode, int action, int mods);
+InputEvent mousebutton_event(int button, int action, int mods);
 
 typedef struct EventQueueItem {
   InputEvent event;
