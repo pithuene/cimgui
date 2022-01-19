@@ -85,10 +85,9 @@ void draw(AppContext *app, void * data) {
   nvgFillColor(app->vg, nvgRGBA(255,192,0,255));
   nvgFill(app->vg);
 
-  InputEventResult ev;
-  while ((ev = eventqueue_dequeue(app->eventqueue)).valid) {
-    if (ev.event.eventType == InputKeyEvent && ev.event.ev.key.action == GLFW_PRESS) {
-      text[textlen] = ev.event.ev.key.key;
+  eventqueue_foreach(InputEvent event, app->eventqueue) {
+    if (event.type == InputKeyEvent && event.instance.key.action == GLFW_PRESS) {
+      text[textlen] = event.instance.key.key;
       textlen++;
     }
   }

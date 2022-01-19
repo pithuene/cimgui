@@ -151,6 +151,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 		nvgEndFrame(state->vg);
 		glfwSwapBuffers(state->glWindow);
 
+    eventqueue_clear(&eventqueue);
     arena_allocator_reset(&frameArena);
 
     /* Limit FPS */

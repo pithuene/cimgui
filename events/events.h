@@ -16,10 +16,10 @@ typedef enum {
 } InputEventType;
 
 typedef struct {
-  InputEventType eventType;
+  InputEventType type;
   union {
     KeyEvent key;
-  } ev;
+  } instance;
 } InputEvent;
 
 // TODO: Naming?
@@ -46,5 +46,18 @@ typedef struct {
 
 /* Remove and return the first element */
 InputEventResult eventqueue_dequeue(EventQueue *queue);
+
+/* Remove all elements from the queue. Doesn't free the elements. */
+void eventqueue_clear(EventQueue *queue);
+
+/* Loop through all events in the queue.
+ *
+ * eventqueue_foreach(InputEvent event, eventqueue) {
+ *   // Use event here
+ * }
+ */
+#define eventqueue_foreach(ITEMDECL, QUEUE) \
+  for (EventQueueItem *__item = QUEUE->head; __item != NULL; __item = __item->next) \
+  for (ITEMDECL = __item->event, *_=(void*)1; _; _=(void*)0)
 
 #endif
