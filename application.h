@@ -3,6 +3,7 @@
 
 #include <GLFW/glfw3.h>
 #include "nanovg/src/nanovg.h"
+#include "events/events.h"
 
 typedef struct {
   // Width and height of the window
@@ -21,6 +22,7 @@ typedef struct {
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
+  EventQueue *eventqueue;
   WindowInfo window;
   DPoint cursor;
 } AppContext;

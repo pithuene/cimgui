@@ -15,11 +15,15 @@
 // Freed after every frame
 arena_allocator_t frameArena;
 
+EventQueue eventqueue;
+
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
 static void key(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
+  eventqueue_enqueue(&eventqueue, key_event(key, scancode, action, mods));
+  
 	NVG_NOTUSED(scancode);
 	NVG_NOTUSED(mods);
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -37,10 +41,16 @@ struct AppContext *application_create(void) {
   *state = (struct AppContext){
 	  .glWindow = NULL,
 	  .vg = NULL,
+    .eventqueue = &eventqueue,
   };
 
   // TODO: It should be easier to use a sensible default like pagesize
   frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  eventqueue = (EventQueue){
+    .arena = &frameArena,
+    .head = NULL,
+    .tail = NULL,
+  };
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -139,16 +149,15 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
     (*draw)(state, data);
 
 		nvgEndFrame(state->vg);
+		glfwSwapBuffers(state->glWindow);
+
+    arena_allocator_reset(&frameArena);
 
     /* Limit FPS */
     double endTime = glfwGetTime();
     double targetFrameTime = 1000000/60;
     double frameTime = (endTime - t) * 1000000;
     usleep(targetFrameTime - frameTime);
-
-		glfwSwapBuffers(state->glWindow);
-
-    arena_allocator_reset(&frameArena);
 
 		glfwPollEvents();
 	}

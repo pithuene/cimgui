@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
+#include "events/events.h"
+#include "ds/ds/vec.h"
 
 int fontNormal = -1;
 
@@ -72,6 +74,9 @@ void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, floa
 	nvgFill(vg);
 }
 
+char text[200] = "Start: ";
+int textlen = 7;
+
 void draw(AppContext *app, void * data) {
   drawEyes(app->vg, app->window.width - 250, 50, 150, 100, 0, 0, 0);
 
@@ -80,11 +85,29 @@ void draw(AppContext *app, void * data) {
   nvgFillColor(app->vg, nvgRGBA(255,192,0,255));
   nvgFill(app->vg);
 
+  InputEventResult ev;
+  while ((ev = eventqueue_dequeue(app->eventqueue)).valid) {
+    if (ev.event.eventType == InputKeyEvent && ev.event.ev.key.action == GLFW_PRESS) {
+      text[textlen] = ev.event.ev.key.key;
+      textlen++;
+    }
+  }
+
+  /* Print number of arena containers */
+  char arena_containers[30];
+  sprintf(arena_containers, "Arena conts: %lu", veclen(app->eventqueue->arena->containers));
 	nvgFontSize(app->vg, 20);
 	nvgFontFace(app->vg, "sans");
 	nvgFillColor(app->vg, nvgRGBA(255,255,255,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(app->vg, 200,100,"Hello World", NULL);
+	nvgText(app->vg, 200,200, arena_containers, NULL);
+
+  /* Print text */
+	nvgFontSize(app->vg, 20);
+	nvgFontFace(app->vg, "sans");
+	nvgFillColor(app->vg, nvgRGBA(255,255,255,255));
+	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+	nvgText(app->vg, 200,100, text, NULL);
 }
 
 int main(void) {
