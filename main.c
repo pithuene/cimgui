@@ -112,14 +112,14 @@ void draw(AppContext *app, void * data) {
   sprintf(arena_containers, "Arena conts: %lu", veclen(app->eventqueue->arena->containers));
 	nvgFontSize(app->vg, 20);
 	nvgFontFace(app->vg, "sans");
-	nvgFillColor(app->vg, nvgRGBA(255,255,255,255));
+	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
 	nvgText(app->vg, 200,200, arena_containers, NULL);
 
   /* Print text */
 	nvgFontSize(app->vg, 20);
 	nvgFontFace(app->vg, "sans");
-	nvgFillColor(app->vg, nvgRGBA(255,255,255,255));
+	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
 	nvgText(app->vg, 200,100, text, NULL);
 }
