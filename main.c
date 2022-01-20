@@ -8,109 +8,18 @@
 
 int fontNormal = -1;
 
-void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, float my, float t)
-{
-	NVGpaint gloss, bg;
-	float ex = w *0.23f;
-	float ey = h * 0.5f;
-	float lx = x + ex;
-	float ly = y + ey;
-	float rx = x + w - ex;
-	float ry = y + ey;
-	float dx,dy,d;
-	float br = (ex < ey ? ex : ey) * 0.5f;
-	float blink = 1 - pow(sinf(t*0.5f),200)*0.8f;
-
-	bg = nvgLinearGradient(vg, x,y+h*0.5f,x+w*0.1f,y+h, nvgRGBA(0,0,0,32), nvgRGBA(0,0,0,16));
-	nvgBeginPath(vg);
-	nvgEllipse(vg, lx+3.0f,ly+16.0f, ex,ey);
-	nvgEllipse(vg, rx+3.0f,ry+16.0f, ex,ey);
-	nvgFillPaint(vg, bg);
-	nvgFill(vg);
-
-	bg = nvgLinearGradient(vg, x,y+h*0.25f,x+w*0.1f,y+h, nvgRGBA(220,220,220,255), nvgRGBA(128,128,128,255));
-	nvgBeginPath(vg);
-	nvgEllipse(vg, lx,ly, ex,ey);
-	nvgEllipse(vg, rx,ry, ex,ey);
-	nvgFillPaint(vg, bg);
-	nvgFill(vg);
-
-	dx = (mx - rx) / (ex * 10);
-	dy = (my - ry) / (ey * 10);
-	d = sqrtf(dx*dx+dy*dy);
-	if (d > 1.0f) {
-		dx /= d; dy /= d;
-	}
-	dx *= ex*0.4f;
-	dy *= ey*0.5f;
-	nvgBeginPath(vg);
-	nvgEllipse(vg, lx+dx,ly+dy+ey*0.25f*(1-blink), br,br*blink);
-	nvgFillColor(vg, nvgRGBA(32,32,32,255));
-	nvgFill(vg);
-
-	dx = (mx - rx) / (ex * 10);
-	dy = (my - ry) / (ey * 10);
-	d = sqrtf(dx*dx+dy*dy);
-	if (d > 1.0f) {
-		dx /= d; dy /= d;
-	}
-	dx *= ex*0.4f;
-	dy *= ey*0.5f;
-	nvgBeginPath(vg);
-	nvgEllipse(vg, rx+dx,ry+dy+ey*0.25f*(1-blink), br,br*blink);
-	nvgFillColor(vg, nvgRGBA(32,32,32,255));
-	nvgFill(vg);
-
-	gloss = nvgRadialGradient(vg, lx-ex*0.25f,ly-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0));
-	nvgBeginPath(vg);
-	nvgEllipse(vg, lx,ly, ex,ey);
-	nvgFillPaint(vg, gloss);
-	nvgFill(vg);
-
-	gloss = nvgRadialGradient(vg, rx-ex*0.25f,ry-ey*0.5f, ex*0.1f,ex*0.75f, nvgRGBA(255,255,255,128), nvgRGBA(255,255,255,0));
-	nvgBeginPath(vg);
-	nvgEllipse(vg, rx,ry, ex,ey);
-	nvgFillPaint(vg, gloss);
-	nvgFill(vg);
-}
-
 char text[200] = "Start: ";
 int textlen = 7;
 int btncount = 0;
 
 void draw(AppContext *app, void * data) {
-  drawEyes(app->vg, app->window.width - 250, 50, 150, 100, 0, 0, 0);
-
-  static NVGcolor rectColor = (NVGcolor){.r = 255, .g = 192, .b = 0, .a = 255};
-
   eventqueue_foreach(InputEvent event, app->eventqueue) {
-    if (event.type == InputKeyEvent && event.instance.key.action == GLFW_PRESS) {
-      text[textlen] = event.instance.key.key;
+    if (event.type == InputCharEvent) {
+      unsigned int codepoint = event.instance.character.codepoint;
+      text[textlen] = codepoint;
       textlen++;
-    } else if (event.type == InputMouseButtonEvent ) {
-      if (event.instance.mousebutton.action == GLFW_PRESS &&
-          app->cursor.x > 400 && app->cursor.x < 430 &&
-          app->cursor.y > 200 && app->cursor.y < 230) {
-        rectColor = (NVGcolor){.r = 0, .g = 255, .b = 0, .a = 255};
-      } else {
-        rectColor = (NVGcolor){.r = 255, .g = 192, .b = 0, .a = 255};
-      }
     }
   }
-
-  nvgBeginPath(app->vg);
-  nvgRect(app->vg, 400, 200, 30, 30);
-  nvgFillColor(app->vg, rectColor);
-  nvgFill(app->vg);
-
-  /* Print btncount */
-  char btn_count_str[40];
-  sprintf(btn_count_str, "Button has been clicked: %d times", btncount);
-	nvgFontSize(app->vg, 20);
-	nvgFontFace(app->vg, "sans");
-	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
-	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(app->vg, 200,200, btn_count_str, NULL);
 
   // TODO: This will cause laggy updates because the button changes btncount after it is displayed
   ButtonConfig btnconf = {
@@ -124,11 +33,20 @@ void draw(AppContext *app, void * data) {
     btncount++;
   }
 
+  /* Print btncount */
+  char btn_count_str[40];
+  sprintf(btn_count_str, "Button has been clicked: %d times", btncount);
+	nvgFontSize(app->vg, 20);
+	nvgFontFace(app->vg, "sans");
+	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
+	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+	nvgText(app->vg, 200,200, btn_count_str, NULL);
+
   /* Print text */
 	nvgFontSize(app->vg, 20);
 	nvgFontFace(app->vg, "sans");
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
-	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
+	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
 	nvgText(app->vg, 200,100, text, NULL);
 }
 

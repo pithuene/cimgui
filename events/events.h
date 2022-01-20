@@ -14,6 +14,11 @@ typedef struct {
 } KeyEvent;
 
 typedef struct {
+  unsigned int codepoint;
+  int mods;
+} CharEvent;
+
+typedef struct {
   int button;
   int action;
   int mods;
@@ -23,6 +28,7 @@ typedef enum {
   // Doesn't hold any information but triggers a draw since the eventqueue is not empty
   InputNopEvent,
   InputKeyEvent,
+  InputCharEvent,
   InputMouseButtonEvent,
 } InputEventType;
 
@@ -31,6 +37,7 @@ typedef struct {
   union {
     NopEvent nop;
     KeyEvent key;
+    CharEvent character;
     MouseButtonEvent mousebutton;
   } instance;
 } InputEvent;
@@ -38,6 +45,7 @@ typedef struct {
 // TODO: Naming?
 InputEvent nop_event(void);
 InputEvent key_event(int key, int scancode, int action, int mods);
+InputEvent char_event(unsigned int codepoint, int mods);
 InputEvent mousebutton_event(int button, int action, int mods);
 
 typedef struct EventQueueItem {

@@ -52,6 +52,10 @@ void windowsize_callback(GLFWwindow* window, int width, int height) {
   eventqueue_enqueue(&eventqueue, nop_event());
 }
 
+void charmods_callback(GLFWwindow* window, unsigned int codepoint, int mods) {
+  eventqueue_enqueue(&eventqueue, char_event(codepoint, mods));
+}
+
 struct AppContext *application_create(void) {
   struct AppContext *state = malloc(sizeof(struct AppContext));
   *state = (struct AppContext){
@@ -96,6 +100,7 @@ struct AppContext *application_create(void) {
 
   /* Set callbacks */
 	glfwSetKeyCallback(state->glWindow, key_callback);
+  glfwSetCharModsCallback(state->glWindow, charmods_callback);
   glfwSetMouseButtonCallback(state->glWindow, mousebutton_callback);
   glfwSetCursorPosCallback(state->glWindow, cursorpos_callback);
   glfwSetScrollCallback(state->glWindow, scroll_callback);

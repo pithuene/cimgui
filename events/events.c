@@ -5,6 +5,7 @@ InputEvent nop_event(void) {
     .type = InputNopEvent,
   };
 }
+
 InputEvent key_event(int key, int scancode, int action, int mods) {
   return (InputEvent){
     .type = InputKeyEvent,
@@ -12,6 +13,16 @@ InputEvent key_event(int key, int scancode, int action, int mods) {
       .key = key,
       .scancode = scancode,
       .action = action,
+      .mods = mods,
+    }
+  };
+}
+
+InputEvent char_event(unsigned int codepoint, int mods) {
+  return (InputEvent){
+    .type = InputCharEvent,
+    .instance.character = {
+      .codepoint = codepoint,
       .mods = mods,
     }
   };
