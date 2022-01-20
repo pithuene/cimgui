@@ -5,6 +5,13 @@ all: main
 run: main
 	./main
 
+.PHONY: clean
+clean:
+	make -C events clean
+	make -C utils clean
+	make -C widgets clean
+	rm -f main
+
 ds/libds.a:
 	make -C ./ds
 
