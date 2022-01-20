@@ -42,6 +42,10 @@ InputEventResult eventqueue_dequeue(EventQueue *queue) {
   return result;
 }
 
+bool eventqueue_isempty(EventQueue *queue) {
+  return queue->head == NULL;
+}
+
 void eventqueue_clear(EventQueue *queue) {
   queue->head = NULL;
   queue->tail = NULL;

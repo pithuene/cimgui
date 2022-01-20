@@ -21,11 +21,11 @@ void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
-static void mousebutton(GLFWwindow* glWindow, int button, int action, int mods) {
+static void mousebutton_callback(GLFWwindow* glWindow, int button, int action, int mods) {
   eventqueue_enqueue(&eventqueue, mousebutton_event(button, action, mods));
 }
 
-static void key(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
+static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
   eventqueue_enqueue(&eventqueue, key_event(key, scancode, action, mods));
   
 	NVG_NOTUSED(scancode);
@@ -38,6 +38,18 @@ static void key(GLFWwindow* glWindow, int key, int scancode, int action, int mod
 		screenshot = 1;
 	if (key == GLFW_KEY_P && action == GLFW_PRESS)
 		premult = !premult;*/
+}
+
+void cursorpos_callback(GLFWwindow* window, double x, double y) {
+  eventqueue_enqueue(&eventqueue, nop_event());
+}
+
+void scroll_callback(GLFWwindow* window, double xoff, double yoff) {
+  eventqueue_enqueue(&eventqueue, nop_event());
+}
+
+void windowsize_callback(GLFWwindow* window, int width, int height) {
+  eventqueue_enqueue(&eventqueue, nop_event());
 }
 
 struct AppContext *application_create(void) {
@@ -83,8 +95,11 @@ struct AppContext *application_create(void) {
 	}
 
   /* Set callbacks */
-	glfwSetKeyCallback(state->glWindow, key);
-  glfwSetMouseButtonCallback(state->glWindow, mousebutton);
+	glfwSetKeyCallback(state->glWindow, key_callback);
+  glfwSetMouseButtonCallback(state->glWindow, mousebutton_callback);
+  glfwSetCursorPosCallback(state->glWindow, cursorpos_callback);
+  glfwSetScrollCallback(state->glWindow, scroll_callback);
+  glfwSetWindowSizeCallback(state->glWindow, windowsize_callback);
 
 	glfwMakeContextCurrent(state->glWindow);
 #ifdef NANOVG_GLEW
@@ -116,6 +131,9 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
+  // Trigger initial draw
+  eventqueue_enqueue(&eventqueue, nop_event());
+
 	while (!glfwWindowShouldClose(state->glWindow))
 	{
 		double mx, my, t, dt;
@@ -135,31 +153,33 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
-		// Update and render
-		glViewport(0, 0, fbWidth, fbHeight);
-    // Background
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+    if (!eventqueue_isempty(&eventqueue)) {
+      // Update and render
+      glViewport(0, 0, fbWidth, fbHeight);
+      // Background
+      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-		nvgBeginFrame(state->vg, winWidth, winHeight, pxRatio);
+      nvgBeginFrame(state->vg, winWidth, winHeight, pxRatio);
 
-    state->window = (WindowInfo){
-      .height = winHeight,
-      .width = winWidth,
-      .fbHeight = fbHeight,
-      .fbWidth = fbWidth,
-      .pxRatio = pxRatio
-    };
-    state->cursor = (DPoint){mx, my};
+      state->window = (WindowInfo){
+        .height = winHeight,
+        .width = winWidth,
+        .fbHeight = fbHeight,
+        .fbWidth = fbWidth,
+        .pxRatio = pxRatio
+      };
+      state->cursor = (DPoint){mx, my};
 
-    // Call the draw function
-    (*draw)(state, data);
+      // Call the draw function
+      (*draw)(state, data);
 
-		nvgEndFrame(state->vg);
-		glfwSwapBuffers(state->glWindow);
+      nvgEndFrame(state->vg);
+      glfwSwapBuffers(state->glWindow);
 
-    eventqueue_clear(&eventqueue);
-    arena_allocator_reset(&frameArena);
+      eventqueue_clear(&eventqueue);
+      arena_allocator_reset(&frameArena);
+    }
 
     /* Limit FPS */
     double endTime = glfwGetTime();

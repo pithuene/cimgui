@@ -1,5 +1,10 @@
 #include "events.h"
 
+InputEvent nop_event(void) {
+  return (InputEvent){
+    .type = InputNopEvent,
+  };
+}
 InputEvent key_event(int key, int scancode, int action, int mods) {
   return (InputEvent){
     .type = InputKeyEvent,

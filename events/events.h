@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "../ds/mem/arenaalloc.h"
 
+typedef struct {} NopEvent;
+
 typedef struct {
   int key;
   int scancode;
@@ -18,6 +20,8 @@ typedef struct {
 } MouseButtonEvent;
 
 typedef enum {
+  // Doesn't hold any information but triggers a draw since the eventqueue is not empty
+  InputNopEvent,
   InputKeyEvent,
   InputMouseButtonEvent,
 } InputEventType;
@@ -25,12 +29,14 @@ typedef enum {
 typedef struct {
   InputEventType type;
   union {
+    NopEvent nop;
     KeyEvent key;
     MouseButtonEvent mousebutton;
   } instance;
 } InputEvent;
 
 // TODO: Naming?
+InputEvent nop_event(void);
 InputEvent key_event(int key, int scancode, int action, int mods);
 InputEvent mousebutton_event(int button, int action, int mods);
 
@@ -55,6 +61,8 @@ typedef struct {
 
 /* Remove and return the first element */
 InputEventResult eventqueue_dequeue(EventQueue *queue);
+
+bool eventqueue_isempty(EventQueue *queue);
 
 /* Remove all elements from the queue. Doesn't free the elements. */
 void eventqueue_clear(EventQueue *queue);
