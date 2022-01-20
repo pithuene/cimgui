@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include "events/events.h"
-#include "ds/ds/vec.h"
+#include "widgets/widgets.h"
 
 int fontNormal = -1;
 
@@ -76,14 +76,10 @@ void drawEyes(NVGcontext* vg, float x, float y, float w, float h, float mx, floa
 
 char text[200] = "Start: ";
 int textlen = 7;
+int btncount = 0;
 
 void draw(AppContext *app, void * data) {
   drawEyes(app->vg, app->window.width - 250, 50, 150, 100, 0, 0, 0);
-
-  nvgBeginPath(app->vg);
-  nvgRect(app->vg, app->cursor.x, app->cursor.y, 30, 30);
-  nvgFillColor(app->vg, nvgRGBA(255,192,0,255));
-  nvgFill(app->vg);
 
   static NVGcolor rectColor = (NVGcolor){.r = 255, .g = 192, .b = 0, .a = 255};
 
@@ -107,14 +103,26 @@ void draw(AppContext *app, void * data) {
   nvgFillColor(app->vg, rectColor);
   nvgFill(app->vg);
 
-  /* Print number of arena containers */
-  char arena_containers[30];
-  sprintf(arena_containers, "Arena conts: %lu", veclen(app->eventqueue->arena->containers));
+  /* Print btncount */
+  char btn_count_str[40];
+  sprintf(btn_count_str, "Button has been clicked: %d times", btncount);
 	nvgFontSize(app->vg, 20);
 	nvgFontFace(app->vg, "sans");
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_CENTER|NVG_ALIGN_MIDDLE);
-	nvgText(app->vg, 200,200, arena_containers, NULL);
+	nvgText(app->vg, 200,200, btn_count_str, NULL);
+
+  // TODO: This will cause laggy updates because the button changes btncount after it is displayed
+  ButtonConfig btnconf = {
+    .x = 50,
+    .y = 50,
+    .label = "Click me!",
+    .background = nvgRGBA(170,170,170,255),
+    .background_active = nvgRGBA(200,200,200,255),
+  };
+  if (button(app, btnconf)) {
+    btncount++;
+  }
 
   /* Print text */
 	nvgFontSize(app->vg, 20);
