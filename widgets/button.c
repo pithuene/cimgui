@@ -17,8 +17,7 @@ bool button(AppContext *app, ButtonConfig conf) {
   bounds[2] += xPadding;
   bounds[3] += yPadding;
 
-  NVGcolor background = conf.background;
-  bool cursor_over_btn = 
+  bool hover = 
     intersects_point_rect(
       app->cursor.x, app->cursor.y,
       bounds[0],
@@ -26,21 +25,56 @@ bool button(AppContext *app, ButtonConfig conf) {
       bounds[2] - bounds[0],
       bounds[3] - bounds[1]
     );
-
+  NVGcolor background = hover ? conf.background_hover : conf.background;
   eventqueue_foreach(InputEvent event, app->eventqueue) {
-    if (event.type == InputMouseButtonEvent) {
-      if (event.instance.mousebutton.action == GLFW_PRESS && cursor_over_btn) {
-        background = conf.background_active;
-      } else {
-        background = conf.background;
+    if (event.type == InputMouseButtonPressEvent) {
+      bool press_over_btn = 
+        intersects_point_rect(
+          event.instance.mousebuttonpress.cursor.x, event.instance.mousebuttonpress.cursor.y,
+          bounds[0],
+          bounds[1],
+          bounds[2] - bounds[0],
+          bounds[3] - bounds[1]
+        );
+      if (press_over_btn) {
+        background = conf.background_down;
       }
-      if (event.instance.mousebutton.action == GLFW_RELEASE && cursor_over_btn) {
+    } else if (event.type == InputMouseButtonHeldDownEvent) {
+      bool press_over_btn = 
+        intersects_point_rect(
+          event.instance.mousebuttonhelddown.initialPress.cursor.x, event.instance.mousebuttonhelddown.initialPress.cursor.y,
+          bounds[0],
+          bounds[1],
+          bounds[2] - bounds[0],
+          bounds[3] - bounds[1]
+        );
+      if (press_over_btn) {
+        background = conf.background_down;
+      }
+    } else if (event.type == InputMouseButtonReleaseEvent) {
+      bool press_over_btn = 
+        intersects_point_rect(
+          event.instance.mousebuttonrelease.initialPress.cursor.x, event.instance.mousebuttonrelease.initialPress.cursor.y,
+          bounds[0],
+          bounds[1],
+          bounds[2] - bounds[0],
+          bounds[3] - bounds[1]
+        );
+      bool release_over_btn = 
+        intersects_point_rect(
+          event.instance.mousebuttonrelease.cursor.x, event.instance.mousebuttonrelease.cursor.y,
+          bounds[0],
+          bounds[1],
+          bounds[2] - bounds[0],
+          bounds[3] - bounds[1]
+        );
+      if (press_over_btn && release_over_btn) {
         result = true;
-        // TODO: Force a redraw on the next frame here.
-        // TODO: Otherwise, if some state is drawn before it is modified by the button, it will not be displayed until another event occured.
-        // TODO: Maybe I should even handle this globally:
-        // TODO: At the end of a frame which actually handled some events, force a redraw on the next frame. If the frame was already forced, don't.
       }
+      // TODO: Force a redraw on the next frame here.
+      // TODO: Otherwise, if some state is drawn before it is modified by the button, it will not be displayed until another event occured.
+      // TODO: Maybe I should even handle this globally:
+      // TODO: At the end of a frame which actually handled some events, force a redraw on the next frame. If the frame was already forced, don't.
     }
   }
 

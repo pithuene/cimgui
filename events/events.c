@@ -6,7 +6,7 @@ InputEvent nop_event(void) {
   };
 }
 
-InputEvent key_event(int key, int scancode, int action, int mods) {
+InputEvent key_event(int key, int scancode, ButtonAction action, int mods) {
   return (InputEvent){
     .type = InputKeyEvent,
     .instance.key = {
@@ -28,13 +28,37 @@ InputEvent char_event(unsigned int codepoint, int mods) {
   };
 }
 
-InputEvent mousebutton_event(int button, int action, int mods) {
+InputEvent mousebuttonpress_event(MouseButton button, DPoint cursor, int mods) {
   return (InputEvent){
-    .type = InputMouseButtonEvent,
-    .instance.mousebutton = {
+    .type = InputMouseButtonPressEvent,
+    .instance.mousebuttonpress = {
       .button = button,
-      .action = action,
       .mods = mods,
+      .cursor = cursor,
+    }
+  };
+}
+
+InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods) {
+  return (InputEvent){
+    .type = InputMouseButtonHeldDownEvent,
+    .instance.mousebuttonhelddown = {
+      .initialPress = press,
+      .button = button,
+      .mods = mods,
+      .cursor = cursor,
+    }
+  };
+}
+
+InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods) {
+  return (InputEvent){
+    .type = InputMouseButtonReleaseEvent,
+    .instance.mousebuttonrelease = {
+      .initialPress = press,
+      .button = button,
+      .mods = mods,
+      .cursor = cursor,
     }
   };
 }

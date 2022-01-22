@@ -17,12 +17,35 @@ arena_allocator_t frameArena;
 
 EventQueue eventqueue;
 
+typedef struct {
+  bool isDown;
+  // The initial click was made
+  MouseButtonPressEvent press;
+} MouseButtonHeldDownState;
+
+// TODO: Name: LastMouseButtonState ???
+MouseButtonHeldDownState IsMouseButtonHeldDown[3] = {
+  {false},
+  {false},
+  {false},
+};
+
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
 }
 
 static void mousebutton_callback(GLFWwindow* glWindow, int button, int action, int mods) {
-  eventqueue_enqueue(&eventqueue, mousebutton_event(button, action, mods));
+  AppContext * context = glfwGetWindowUserPointer(glWindow);
+  if (button >= 0 && button < 3) {
+    if (action == GLFW_PRESS) {
+      InputEvent pressEvent = mousebuttonpress_event(button, context->cursor, mods);
+      eventqueue_enqueue(&eventqueue, pressEvent);
+      IsMouseButtonHeldDown[button] = (MouseButtonHeldDownState){true, pressEvent.instance.mousebuttonpress};
+    } else if (action == GLFW_RELEASE) {
+      eventqueue_enqueue(&eventqueue, mousebuttonrelease_event(IsMouseButtonHeldDown[button].press, button, context->cursor, mods));
+      IsMouseButtonHeldDown[button] = (MouseButtonHeldDownState){false};
+    }
+  }
 }
 
 static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
@@ -92,6 +115,10 @@ struct AppContext *application_create(void) {
 #endif
 	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
 //	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
+
+  // Make the AppContext available inside the glfw callbacks
+  glfwSetWindowUserPointer(state->glWindow, state);
+
 	if (!state->glWindow) {
 		glfwTerminate();
 		printf("Failed to create window.");
@@ -129,6 +156,7 @@ struct AppContext *application_create(void) {
 	return state;
 }
 
+
 void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, void *), void * data) {
 	double prevt = 0;
 	glfwSwapInterval(0);
@@ -147,6 +175,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 		float pxRatio;
 		float gpuTimes[3];
 		int i, n;
+    DPoint cursor;
 
 		t = glfwGetTime();
 		dt = t - prevt;
@@ -155,6 +184,9 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 		glfwGetCursorPos(state->glWindow, &mx, &my);
 		glfwGetWindowSize(state->glWindow, &winWidth, &winHeight);
 		glfwGetFramebufferSize(state->glWindow, &fbWidth, &fbHeight);
+
+    cursor = (DPoint){mx, my};
+
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
@@ -174,7 +206,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
         .fbWidth = fbWidth,
         .pxRatio = pxRatio
       };
-      state->cursor = (DPoint){mx, my};
+      state->cursor = cursor;
 
       // Call the draw function
       (*draw)(state, data);
@@ -192,7 +224,20 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
     double frameTime = (endTime - t) * 1000000;
     usleep(targetFrameTime - frameTime);
 
+    MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
+      IsMouseButtonHeldDown[0],
+      IsMouseButtonHeldDown[1],
+      IsMouseButtonHeldDown[2],
+    };
+
 		glfwPollEvents();
+
+    for (int8_t i = 0; i < 3; i++) {
+      if (IsMouseButtonHeldDownBefore[i].isDown && IsMouseButtonHeldDown[i].isDown) {
+        // TODO: Fix mods
+        eventqueue_enqueue(&eventqueue, mousebuttonhelddown_event(IsMouseButtonHeldDown[i].press, i, cursor, 0));
+      }
+    }
 	}
 }
 

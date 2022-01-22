@@ -14,11 +14,6 @@ typedef struct {
 	float pxRatio;
 } WindowInfo;
 
-typedef struct {
-  double x;
-  double y;
-} DPoint;
-
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;

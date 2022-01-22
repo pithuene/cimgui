@@ -26,8 +26,9 @@ void draw(AppContext *app, void * data) {
     .x = 50,
     .y = 50,
     .label = "Click me!",
-    .background = nvgRGBA(170,170,170,255),
-    .background_active = nvgRGBA(200,200,200,255),
+    .background = nvgRGBA(255,0,0,255),
+    .background_hover = nvgRGBA(0,255,0,255),
+    .background_down = nvgRGBA(0,0,255,255),
   };
   if (button(app, btnconf)) {
     btncount++;

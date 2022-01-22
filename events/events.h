@@ -2,34 +2,68 @@
 #define _EVENTS_H
 
 #include <stdbool.h>
+#include "../utils/utils.h"
 #include "../ds/mem/arenaalloc.h"
 
+typedef enum {
+  MouseButtonLeft   = 0,
+  MouseButtonRight  = 1,
+  MouseButtonMiddle = 2,
+} MouseButton;
+
+typedef enum {
+  ButtonActionRelease  = 0,
+  ButtonActionPress    = 1,
+  ButtonActionRepeat   = 2,
+  ButtonActionHeldDown = 3,
+} ButtonAction;
+
+// Doesn't hold any information but triggers a draw since the eventqueue is not empty
 typedef struct {} NopEvent;
 
 typedef struct {
-  int key;
-  int scancode;
-  int action;
-  int mods;
+  int          key;
+  int          scancode;
+  ButtonAction action;
+  int          mods;
 } KeyEvent;
 
 typedef struct {
   unsigned int codepoint;
-  int mods;
+  int          mods;
 } CharEvent;
 
 typedef struct {
-  int button;
-  int action;
-  int mods;
-} MouseButtonEvent;
+  MouseButton  button;
+  DPoint       cursor;
+  int          mods;
+} MouseButtonPressEvent;
+
+typedef struct {
+  // The initial press event since which the button has been held down
+  MouseButtonPressEvent initialPress;
+  MouseButton           button;
+  // Where the cursor was this frame
+  DPoint                cursor;
+  int                   mods;
+} MouseButtonHeldDownEvent;
+
+typedef struct {
+  // The initial press event which was released
+  MouseButtonPressEvent initialPress;
+  MouseButton           button;
+  // Where the cursor was released
+  DPoint                cursor;
+  int                   mods;
+} MouseButtonReleaseEvent;
 
 typedef enum {
-  // Doesn't hold any information but triggers a draw since the eventqueue is not empty
   InputNopEvent,
   InputKeyEvent,
   InputCharEvent,
-  InputMouseButtonEvent,
+  InputMouseButtonPressEvent,
+  InputMouseButtonHeldDownEvent,
+  InputMouseButtonReleaseEvent,
 } InputEventType;
 
 typedef struct {
@@ -38,15 +72,19 @@ typedef struct {
     NopEvent nop;
     KeyEvent key;
     CharEvent character;
-    MouseButtonEvent mousebutton;
+    MouseButtonPressEvent mousebuttonpress;
+    MouseButtonHeldDownEvent mousebuttonhelddown;
+    MouseButtonReleaseEvent mousebuttonrelease;
   } instance;
 } InputEvent;
 
 // TODO: Naming?
 InputEvent nop_event(void);
-InputEvent key_event(int key, int scancode, int action, int mods);
+InputEvent key_event(int key, int scancode, ButtonAction action, int mods);
 InputEvent char_event(unsigned int codepoint, int mods);
-InputEvent mousebutton_event(int button, int action, int mods);
+InputEvent mousebuttonpress_event(MouseButton button, DPoint cursor, int mods);
+InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods);
+InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods);
 
 typedef struct EventQueueItem {
   InputEvent event;

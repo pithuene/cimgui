@@ -11,7 +11,8 @@ typedef struct {
   float y;
   const char *label;
   NVGcolor background;
-  NVGcolor background_active;
+  NVGcolor background_hover;
+  NVGcolor background_down;
 } ButtonConfig;
 
 bool button(AppContext *app, ButtonConfig conf);
