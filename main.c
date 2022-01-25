@@ -21,7 +21,6 @@ void draw(AppContext *app, void * data) {
     }
   }
 
-  // TODO: This will cause laggy updates because the button changes btncount after it is displayed
   ButtonConfig btnconf = {
     .x = 50,
     .y = 50,

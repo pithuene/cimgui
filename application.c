@@ -15,8 +15,6 @@
 // Freed after every frame
 arena_allocator_t frameArena;
 
-EventQueue eventqueue;
-
 typedef struct {
   bool isDown;
   // The initial click was made
@@ -24,7 +22,7 @@ typedef struct {
 } MouseButtonHeldDownState;
 
 // TODO: Name: LastMouseButtonState ???
-MouseButtonHeldDownState IsMouseButtonHeldDown[3] = {
+MouseButtonHeldDownState LastMouseButtonPresses[3] = {
   {false},
   {false},
   {false},
@@ -39,17 +37,18 @@ static void mousebutton_callback(GLFWwindow* glWindow, int button, int action, i
   if (button >= 0 && button < 3) {
     if (action == GLFW_PRESS) {
       InputEvent pressEvent = mousebuttonpress_event(button, context->cursor, mods);
-      eventqueue_enqueue(&eventqueue, pressEvent);
-      IsMouseButtonHeldDown[button] = (MouseButtonHeldDownState){true, pressEvent.instance.mousebuttonpress};
+      eventqueue_enqueue(&context->eventqueue, pressEvent);
+      LastMouseButtonPresses[button] = (MouseButtonHeldDownState){true, pressEvent.instance.mousebuttonpress};
     } else if (action == GLFW_RELEASE) {
-      eventqueue_enqueue(&eventqueue, mousebuttonrelease_event(IsMouseButtonHeldDown[button].press, button, context->cursor, mods));
-      IsMouseButtonHeldDown[button] = (MouseButtonHeldDownState){false};
+      eventqueue_enqueue(&context->eventqueue, mousebuttonrelease_event(LastMouseButtonPresses[button].press, button, context->cursor, mods));
+      LastMouseButtonPresses[button] = (MouseButtonHeldDownState){false};
     }
   }
 }
 
 static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action, int mods) {
-  eventqueue_enqueue(&eventqueue, key_event(key, scancode, action, mods));
+  AppContext * context = glfwGetWindowUserPointer(glWindow);
+  eventqueue_enqueue(&context->eventqueue, key_event(key, scancode, action, mods));
   
 	NVG_NOTUSED(scancode);
 	NVG_NOTUSED(mods);
@@ -64,19 +63,23 @@ static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action
 }
 
 void cursorpos_callback(GLFWwindow* window, double x, double y) {
-  eventqueue_enqueue(&eventqueue, nop_event());
+  AppContext * context = glfwGetWindowUserPointer(window);
+  eventqueue_enqueue(&context->eventqueue, nop_event());
 }
 
 void scroll_callback(GLFWwindow* window, double xoff, double yoff) {
-  eventqueue_enqueue(&eventqueue, nop_event());
+  AppContext * context = glfwGetWindowUserPointer(window);
+  eventqueue_enqueue(&context->eventqueue, nop_event());
 }
 
 void windowsize_callback(GLFWwindow* window, int width, int height) {
-  eventqueue_enqueue(&eventqueue, nop_event());
+  AppContext * context = glfwGetWindowUserPointer(window);
+  eventqueue_enqueue(&context->eventqueue, nop_event());
 }
 
 void charmods_callback(GLFWwindow* window, unsigned int codepoint, int mods) {
-  eventqueue_enqueue(&eventqueue, char_event(codepoint, mods));
+  AppContext * context = glfwGetWindowUserPointer(window);
+  eventqueue_enqueue(&context->eventqueue, char_event(codepoint, mods));
 }
 
 struct AppContext *application_create(void) {
@@ -84,12 +87,12 @@ struct AppContext *application_create(void) {
   *state = (struct AppContext){
 	  .glWindow = NULL,
 	  .vg = NULL,
-    .eventqueue = &eventqueue,
   };
 
   // TODO: It should be easier to use a sensible default like pagesize
   frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
-  eventqueue = (EventQueue){
+
+  state->eventqueue = (EventQueue){
     .arena = &frameArena,
     .head = NULL,
     .tail = NULL,
@@ -165,7 +168,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 	prevt = glfwGetTime();
 
   // Trigger initial draw
-  eventqueue_enqueue(&eventqueue, nop_event());
+  eventqueue_enqueue(&state->eventqueue, nop_event());
 
 	while (!glfwWindowShouldClose(state->glWindow))
 	{
@@ -190,7 +193,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
-    if (!eventqueue_isempty(&eventqueue)) {
+    if (!eventqueue_isempty(&state->eventqueue)) {
       // Update and render
       glViewport(0, 0, fbWidth, fbHeight);
       // Background
@@ -214,7 +217,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
       nvgEndFrame(state->vg);
       glfwSwapBuffers(state->glWindow);
 
-      eventqueue_clear(&eventqueue);
+      eventqueue_clear(&state->eventqueue);
       arena_allocator_reset(&frameArena);
     }
 
@@ -225,17 +228,17 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
     usleep(targetFrameTime - frameTime);
 
     MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
-      IsMouseButtonHeldDown[0],
-      IsMouseButtonHeldDown[1],
-      IsMouseButtonHeldDown[2],
+      LastMouseButtonPresses[0],
+      LastMouseButtonPresses[1],
+      LastMouseButtonPresses[2],
     };
 
 		glfwPollEvents();
 
     for (int8_t i = 0; i < 3; i++) {
-      if (IsMouseButtonHeldDownBefore[i].isDown && IsMouseButtonHeldDown[i].isDown) {
+      if (IsMouseButtonHeldDownBefore[i].isDown && LastMouseButtonPresses[i].isDown) {
         // TODO: Fix mods
-        eventqueue_enqueue(&eventqueue, mousebuttonhelddown_event(IsMouseButtonHeldDown[i].press, i, cursor, 0));
+        eventqueue_enqueue(&state->eventqueue, mousebuttonhelddown_event(LastMouseButtonPresses[i].press, i, cursor, 0));
       }
     }
 	}

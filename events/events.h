@@ -120,7 +120,7 @@ void eventqueue_clear(EventQueue *queue);
  * }
  */
 #define eventqueue_foreach(ITEMDECL, QUEUE) \
-  for (EventQueueItem *__item = QUEUE->head; __item != NULL; __item = __item->next) \
+  for (EventQueueItem *__item = (QUEUE).head; __item != NULL; __item = __item->next) \
   for (ITEMDECL = __item->event, *_=(void*)1; _; _=(void*)0)
 
 #endif

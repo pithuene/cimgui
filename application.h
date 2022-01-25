@@ -17,7 +17,7 @@ typedef struct {
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
-  EventQueue *eventqueue;
+  EventQueue eventqueue;
   WindowInfo window;
   DPoint cursor;
 } AppContext;
