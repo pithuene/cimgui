@@ -6,6 +6,14 @@
 #include "events/events.h"
 #include "ds/mem/arenaalloc.h"
 
+// Stores whether a mousebutton is currently pressed down and in which
+// PressEvent it was initially pressed.
+// Used internally to generate the InputMouseButtonHeldDownEvents
+typedef struct {
+  bool isDown;
+  MouseButtonPressEvent press;
+} _MouseButtonHeldDownState;
+
 typedef struct {
   // Width and height of the window
 	int width, height;
@@ -18,12 +26,12 @@ typedef struct {
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
-  // Holds per frame data like events
-  // Freed after every frame
+  // Holds per frame data like events. Freed after every frame.
   arena_allocator_t frameArena;
   EventQueue eventqueue;
   WindowInfo window;
   DPoint cursor;
+  _MouseButtonHeldDownState _lastMouseButtonPresses[3];
 } AppContext;
 
 AppContext *application_create(void);
