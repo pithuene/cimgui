@@ -147,8 +147,9 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
-  // Trigger initial draw
-  eventqueue_enqueue(&context->eventqueue, nop_event());
+  // Forces the next frame even if there are no events
+  // Set to true to trigger the initial draw.
+  bool forceNextFrameDraw = true;
 
 	while (!glfwWindowShouldClose(context->glWindow))
 	{
@@ -173,7 +174,8 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 		// Calculate pixel ration for hi-dpi devices.
 		pxRatio = (float)fbWidth / (float)winWidth;
 
-    if (!eventqueue_isempty(&context->eventqueue)) {
+    // Draw only if there are events to be handled or if the next frame is forced.
+    if (forceNextFrameDraw || !eventqueue_isempty(&context->eventqueue)) {
       // Update and render
       glViewport(0, 0, fbWidth, fbHeight);
       // Background
@@ -197,6 +199,22 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       nvgEndFrame(context->vg);
       glfwSwapBuffers(context->glWindow);
 
+      // If a frame had events to handle, force another draw on the next frame.
+      // This fixes the issue of displaying data before changing it.
+      //
+      // Say the click of a button increments a counter, if the button is drawn
+      // and therefore its events are handled *after* the counter is displayed,
+      // and you only draw when there are events, the counter won't change until
+      // something else emits another event.
+      if (!eventqueue_isempty(&context->eventqueue)) {
+        // This frame was not forced. There were actual events to handle.
+        // Force a redraw next frame.
+        forceNextFrameDraw = true;
+      } else {
+        // This frame was forced. Don't force another.
+        forceNextFrameDraw = false;
+      }
+
       eventqueue_clear(&context->eventqueue);
       arena_allocator_reset(&context->frameArena);
     }
@@ -215,6 +233,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 
 		glfwPollEvents();
 
+    // Generate MouseButtonHeldDown events
     for (int8_t i = 0; i < 3; i++) {
       if (IsMouseButtonHeldDownBefore[i].isDown && context->_lastMouseButtonPresses[i].isDown) {
         // TODO: Fix mods

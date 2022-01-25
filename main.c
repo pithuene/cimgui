@@ -21,18 +21,6 @@ void draw(AppContext *app, void * data) {
     }
   }
 
-  ButtonConfig btnconf = {
-    .x = 50,
-    .y = 50,
-    .label = "Click me!",
-    .background = nvgRGBA(255,0,0,255),
-    .background_hover = nvgRGBA(0,255,0,255),
-    .background_down = nvgRGBA(0,0,255,255),
-  };
-  if (button(app, btnconf)) {
-    btncount++;
-  }
-
   /* Print btncount */
   char btn_count_str[40];
   sprintf(btn_count_str, "Button has been clicked: %d times", btncount);
@@ -41,6 +29,18 @@ void draw(AppContext *app, void * data) {
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
 	nvgText(app->vg, 200,200, btn_count_str, NULL);
+
+  ButtonConfig btnconf = {
+    .x = 50,
+    .y = 50,
+    .label = "Click me!",
+    .background = nvgRGBA(170, 170, 170, 255),
+    .background_hover = nvgRGBA(190, 190, 190, 255),
+    .background_down = nvgRGBA(150, 150, 150, 255),
+  };
+  if (button(app, btnconf)) {
+    btncount++;
+  }
 
   /* Print text */
 	nvgFontSize(app->vg, 20);

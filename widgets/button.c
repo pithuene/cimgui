@@ -71,10 +71,6 @@ bool button(AppContext *app, ButtonConfig conf) {
       if (press_over_btn && release_over_btn) {
         result = true;
       }
-      // TODO: Force a redraw on the next frame here.
-      // TODO: Otherwise, if some state is drawn before it is modified by the button, it will not be displayed until another event occured.
-      // TODO: Maybe I should even handle this globally:
-      // TODO: At the end of a frame which actually handled some events, force a redraw on the next frame. If the frame was already forced, don't.
     }
   }
 
