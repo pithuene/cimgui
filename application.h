@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include "nanovg/src/nanovg.h"
 #include "events/events.h"
+#include "ds/mem/arenaalloc.h"
 
 typedef struct {
   // Width and height of the window
@@ -17,6 +18,9 @@ typedef struct {
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
+  // Holds per frame data like events
+  // Freed after every frame
+  arena_allocator_t frameArena;
   EventQueue eventqueue;
   WindowInfo window;
   DPoint cursor;

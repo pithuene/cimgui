@@ -9,11 +9,6 @@
 #include <unistd.h>
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
-#include "ds/mem/arenaalloc.h"
-
-// Holds per frame data like events
-// Freed after every frame
-arena_allocator_t frameArena;
 
 typedef struct {
   bool isDown;
@@ -90,10 +85,10 @@ struct AppContext *application_create(void) {
   };
 
   // TODO: It should be easier to use a sensible default like pagesize
-  frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  state->frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
 
   state->eventqueue = (EventQueue){
-    .arena = &frameArena,
+    .arena = &state->frameArena,
     .head = NULL,
     .tail = NULL,
   };
@@ -218,7 +213,7 @@ void application_loop(struct AppContext *state, void(*draw)(struct AppContext*, 
       glfwSwapBuffers(state->glWindow);
 
       eventqueue_clear(&state->eventqueue);
-      arena_allocator_reset(&frameArena);
+      arena_allocator_reset(&state->frameArena);
     }
 
     /* Limit FPS */
