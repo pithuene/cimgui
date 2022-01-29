@@ -42,7 +42,6 @@ void draw(AppContext *app, void * data) {
     .background_hover = nvgRGBA(190, 190, 190, 255),
     .background_down = nvgRGBA(150, 150, 150, 255),
   };
-  Widget btn_increase = button(&increase_btnconf);
 
   ButtonConfig decrease_btnconf = {
     .result = &decrease_clicked,
@@ -53,10 +52,9 @@ void draw(AppContext *app, void * data) {
     .background_hover = nvgRGBA(190, 190, 190, 255),
     .background_down = nvgRGBA(150, 150, 150, 255),
   };
-  Widget btn_decrease = button(&decrease_btnconf);
 
-  draw_widget(app, btn_increase);
-  draw_widget(app, btn_decrease);
+  button.draw(app, &increase_btnconf);
+  button.draw(app, &decrease_btnconf);
   if (increase_clicked) {
     fontSize += 5;
   }
@@ -67,7 +65,6 @@ void draw(AppContext *app, void * data) {
   double heightFactor = 0.71;
   double heightOffset = fontSize*0.0805;
   nvgBeginPath(app->vg);
-  //nvgRect(app->vg, 200, 100+heightOffset, fontSize, fontSize*heightFactor);
   nvgRect(app->vg, 200, 100, fontSize, fontSize);
   nvgFillColor(app->vg, nvgRGBA(255, 0, 0, 255));
   nvgFill(app->vg);
@@ -84,11 +81,6 @@ int main(void) {
   AppContext *app = application_create();
 
   fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
-	/*fontNormal = nvgCreateFont(app->vg, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf");
-	if (fontNormal == -1) {
-		printf("Could not add font italic.\n");
-		return -1;
-	}*/
 
   application_loop(app, draw, &counter);
   application_free(app);

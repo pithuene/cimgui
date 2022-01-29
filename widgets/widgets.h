@@ -7,10 +7,11 @@
 #include "../nanovg/src/nanovg.h"
 
 typedef DPoint(*WidgetDraw)(AppContext *, void *);
+typedef DPoint(*WidgetSize)(AppContext *, void *);
 
 typedef struct {
   WidgetDraw draw;
-  void      *data;
+  WidgetSize size;
 } Widget;
 
 DPoint draw_widget(AppContext *context, Widget widget);
@@ -25,8 +26,8 @@ typedef struct {
   NVGcolor background_down;
 } ButtonConfig;
 
+extern Widget button;
 DPoint button_draw(AppContext *context, ButtonConfig *conf);
-
-Widget button(ButtonConfig *conf);
+DPoint button_size(AppContext *context, ButtonConfig *conf);
 
 #endif

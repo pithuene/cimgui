@@ -90,9 +90,28 @@ DPoint button_draw(AppContext *app, ButtonConfig *conf) {
   };
 }
 
-Widget button(ButtonConfig *conf) {
-  return (Widget){
-    .draw = (WidgetDraw) button_draw,
-    .data = conf,
+DPoint button_size(AppContext *app, ButtonConfig *conf) {
+  float xPadding = 10;
+  float yPadding = 10;
+
+	nvgFontSize(app->vg, 20);
+	nvgFontFace(app->vg, "sans");
+	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+  
+  float bounds[4];
+	nvgTextBounds(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL, bounds);
+  bounds[0] -= xPadding;
+  bounds[1] -= yPadding;
+  bounds[2] += xPadding;
+  bounds[3] += yPadding;
+
+  return (DPoint){
+    .x = bounds[2] - bounds[0],
+    .y = bounds[3] - bounds[1]
   };
 }
+
+Widget button = {
+  .draw = (WidgetDraw) button_draw,
+  .size = (WidgetSize) button_size,
+};
