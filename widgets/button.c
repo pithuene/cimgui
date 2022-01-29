@@ -74,10 +74,14 @@ DPoint button_draw(AppContext *app, ButtonConfig *conf) {
     }
   }
 
-  nvgBeginPath(app->vg);
-  nvgRect(app->vg, bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
-  nvgFillColor(app->vg, background);
-  nvgFill(app->vg);
+  RectConfig background_rect = {
+    .x = bounds[0],
+    .y = bounds[1],
+    .w = bounds[2] - bounds[0],
+    .h = bounds[3] - bounds[1],
+    .color = background,
+  };
+  rect.draw(app, &background_rect);
 
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgText(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL);

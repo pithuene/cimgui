@@ -17,6 +17,18 @@ typedef struct {
 DPoint draw_widget(AppContext *context, Widget widget);
 
 typedef struct {
+  float x;
+  float y;
+  float w;
+  float h;
+  NVGcolor color;
+} RectConfig;
+
+extern Widget rect;
+DPoint rect_draw(AppContext *context, RectConfig *conf);
+DPoint rect_size(AppContext *context, RectConfig *conf);
+
+typedef struct {
   bool *result;
   float x;
   float y;

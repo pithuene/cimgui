@@ -9,7 +9,7 @@
 
 Font fontNormal = {0};
 
-char text[200] = "Ttart: ";
+char text[200] = "Start: ";
 int textlen = 7;
 int fontSize = 90;
 
