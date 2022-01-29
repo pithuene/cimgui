@@ -6,7 +6,17 @@
 #include "../application.h"
 #include "../nanovg/src/nanovg.h"
 
+typedef DPoint(*WidgetDraw)(AppContext *, void *);
+
 typedef struct {
+  WidgetDraw draw;
+  void      *data;
+} Widget;
+
+DPoint draw_widget(AppContext *context, Widget widget);
+
+typedef struct {
+  bool *result;
   float x;
   float y;
   const char *label;
@@ -15,6 +25,8 @@ typedef struct {
   NVGcolor background_down;
 } ButtonConfig;
 
-bool button(AppContext *app, ButtonConfig conf);
+DPoint button_draw(AppContext *context, ButtonConfig *conf);
+
+Widget button(ButtonConfig *conf);
 
 #endif

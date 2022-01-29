@@ -1,6 +1,6 @@
 #include "widgets.h"
 
-bool button(AppContext *app, ButtonConfig conf) {
+DPoint button_draw(AppContext *app, ButtonConfig *conf) {
   bool result = false;
 
   float xPadding = 10;
@@ -11,7 +11,7 @@ bool button(AppContext *app, ButtonConfig conf) {
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   
   float bounds[4];
-	nvgTextBounds(app->vg, conf.x + xPadding, conf.y + yPadding, conf.label, NULL, bounds);
+	nvgTextBounds(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL, bounds);
   bounds[0] -= xPadding;
   bounds[1] -= yPadding;
   bounds[2] += xPadding;
@@ -25,7 +25,7 @@ bool button(AppContext *app, ButtonConfig conf) {
       bounds[2] - bounds[0],
       bounds[3] - bounds[1]
     );
-  NVGcolor background = hover ? conf.background_hover : conf.background;
+  NVGcolor background = hover ? conf->background_hover : conf->background;
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputMouseButtonPressEvent) {
       bool press_over_btn = 
@@ -37,7 +37,7 @@ bool button(AppContext *app, ButtonConfig conf) {
           bounds[3] - bounds[1]
         );
       if (press_over_btn) {
-        background = conf.background_down;
+        background = conf->background_down;
       }
     } else if (event.type == InputMouseButtonHeldDownEvent) {
       bool press_over_btn = 
@@ -49,7 +49,7 @@ bool button(AppContext *app, ButtonConfig conf) {
           bounds[3] - bounds[1]
         );
       if (press_over_btn) {
-        background = conf.background_down;
+        background = conf->background_down;
       }
     } else if (event.type == InputMouseButtonReleaseEvent) {
       bool press_over_btn = 
@@ -80,8 +80,19 @@ bool button(AppContext *app, ButtonConfig conf) {
   nvgFill(app->vg);
 
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
-	nvgText(app->vg, conf.x + xPadding, conf.y + yPadding, conf.label, NULL);
+	nvgText(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL);
 
-  return result;
+  *conf->result = result;
+
+  return (DPoint){
+    .x = bounds[2] - bounds[0],
+    .y = bounds[3] - bounds[1]
+  };
 }
 
+Widget button(ButtonConfig *conf) {
+  return (Widget){
+    .draw = (WidgetDraw) button_draw,
+    .data = conf,
+  };
+}
