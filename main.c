@@ -25,36 +25,60 @@ void draw(AppContext *app, void * data) {
   /* Print btncount */
   char btn_count_str[40];
   sprintf(btn_count_str, "Button has been clicked: %d times", fontSize);
-	nvgFontSize(app->vg, 20);
-	nvgFontFace(app->vg, "sans");
-	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
-	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-	nvgText(app->vg, 200,200, btn_count_str, NULL);
+  TextConfig label = {
+    .font = &fontNormal,
+    .size = 20,
+    .position = {
+      .x = 200,
+      .y = 200,
+    },
+    .content = btn_count_str,
+    .color = nvgRGB(0, 0, 0),
+  };
+
+  DPoint label_size = widg_text.size(app, &label);
+  RectConfig labelBackground = {
+    .color = nvgRGB(255,0,0),
+    .x = 200,
+    .y = 200,
+    .w = label_size.x,
+    .h = label_size.y,
+  };
+  widg_rect.draw(app, &labelBackground);
+
+  widg_text.draw(app, &label);
 
   bool increase_clicked = false;
   bool decrease_clicked = false;
+
   ButtonConfig increase_btnconf = {
-    .result = &increase_clicked,
-    .x = 50,
-    .y = 50,
-    .label = "Increase",
-    .background = nvgRGBA(170, 170, 170, 255),
+    .result           = &increase_clicked,
+    .x                = 50,
+    .y                = 50,
+    .label            = "Increase",
+    .label_font       = &fontNormal,
+    .label_font_size  = 14,
+    .label_color      = nvgRGBA(0, 0, 0, 255),
+    .background       = nvgRGBA(170, 170, 170, 255),
     .background_hover = nvgRGBA(190, 190, 190, 255),
-    .background_down = nvgRGBA(150, 150, 150, 255),
+    .background_down  = nvgRGBA(150, 150, 150, 255),
   };
 
   ButtonConfig decrease_btnconf = {
-    .result = &decrease_clicked,
-    .x = 200,
-    .y = 50,
-    .label = "Decrease",
-    .background = nvgRGBA(170, 170, 170, 255),
+    .result           = &decrease_clicked,
+    .x                = 200,
+    .y                = 50,
+    .label            = "Decrease",
+    .label_font       = &fontNormal,
+    .label_font_size  = 14,
+    .label_color      = nvgRGBA(0, 0, 0, 255),
+    .background       = nvgRGBA(170, 170, 170, 255),
     .background_hover = nvgRGBA(190, 190, 190, 255),
-    .background_down = nvgRGBA(150, 150, 150, 255),
+    .background_down  = nvgRGBA(150, 150, 150, 255),
   };
 
-  button.draw(app, &increase_btnconf);
-  button.draw(app, &decrease_btnconf);
+  widg_button.draw(app, &increase_btnconf);
+  widg_button.draw(app, &decrease_btnconf);
   if (increase_clicked) {
     fontSize += 5;
   }

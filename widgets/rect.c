@@ -19,7 +19,7 @@ DPoint rect_size(AppContext *app, RectConfig *conf) {
   };
 }
 
-Widget rect = {
+Widget widg_rect = {
   .draw = (WidgetDraw) rect_draw,
   .size = (WidgetSize) rect_size,
 };
