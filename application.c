@@ -1,8 +1,9 @@
-#include "application.h"
 #include <stdio.h>
 #ifdef __APPLE__
 #	define GLFW_INCLUDE_GLCOREARB
 #endif
+#include <GL/glew.h>
+#include "application.h"
 #define GLFW_INCLUDE_GLEXT
 #include <GLFW/glfw3.h>
 #include "nanovg/src/nanovg.h"
@@ -117,15 +118,13 @@ struct AppContext *application_create(void) {
   glfwSetWindowSizeCallback(state->glWindow, windowsize_callback);
 
 	glfwMakeContextCurrent(state->glWindow);
-#ifdef NANOVG_GLEW
 	glewExperimental = GL_TRUE;
 	if(glewInit() != GLEW_OK) {
 		printf("Could not init glew.\n");
-		return -1;
+		exit(1);
 	}
 	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
 	glGetError();
-#endif
 
 #ifdef DEMO_MSAA
 	state->vg = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_DEBUG);
