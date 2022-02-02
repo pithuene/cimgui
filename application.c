@@ -1,3 +1,4 @@
+#define _DEFAULT_SOURCE
 #include <stdio.h>
 #ifdef __APPLE__
 #	define GLFW_INCLUDE_GLCOREARB
