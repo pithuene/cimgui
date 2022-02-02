@@ -1,6 +1,6 @@
 #include "widgets.h"
 
-DPoint text_draw(AppContext *app, TextConfig *conf) {
+DPoint text_draw(AppContext *app, text_t *conf) {
   nvgBeginPath(app->vg);
 	nvgFillColor(app->vg, conf->color);
 	nvgFontSize(app->vg, (float)conf->size/conf->font->heightFactor);
@@ -26,7 +26,7 @@ DPoint text_draw(AppContext *app, TextConfig *conf) {
   };
 }
 
-DPoint text_size(AppContext *app, TextConfig *conf) {
+DPoint text_size(AppContext *app, text_t *conf) {
 	nvgFontSize(app->vg, (float)conf->size/conf->font->heightFactor);
 	nvgFontFace(app->vg, conf->font->name);
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
@@ -43,8 +43,3 @@ DPoint text_size(AppContext *app, TextConfig *conf) {
     .y = conf->size,
   };
 }
-
-Widget widg_text = {
-  .draw = (WidgetDraw) text_draw,
-  .size = (WidgetSize) text_size,
-};

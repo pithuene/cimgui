@@ -25,35 +25,33 @@ void draw(AppContext *app, void * data) {
   /* Print btncount */
   char btn_count_str[40];
   sprintf(btn_count_str, "Button has been clicked: %d times", fontSize);
-  TextConfig label = {
+  widget_t *label = text(
     .font = &fontNormal,
-    .size = 20,
+    .size = 10,
     .position = {
       .x = 200,
       .y = 200,
     },
     .content = btn_count_str,
     .color = nvgRGB(0, 0, 0),
-  };
+  );
 
-  DPoint label_size = widg_text.size(app, &label);
-  RectConfig labelBackground = {
-    .color = nvgRGB(255,0,0),
+  DPoint label_size = widget_getsize(app, label);
+
+  widget_draw(app, rect(
+    .color = nvgRGB(255,255,255),
     .x = 200,
     .y = 200,
     .w = label_size.x,
     .h = label_size.y,
-  };
-  widg_rect.draw(app, &labelBackground);
+  ));
 
-  widg_text.draw(app, &label);
+  widget_draw(app, label);
 
   bool increase_clicked = false;
-  bool decrease_clicked = false;
-
-  ButtonConfig increase_btnconf = {
+  widget_draw(app, button(
     .result           = &increase_clicked,
-    .x                = 50,
+    .x                = 20,
     .y                = 50,
     .label            = "Increase",
     .label_font       = &fontNormal,
@@ -62,9 +60,13 @@ void draw(AppContext *app, void * data) {
     .background       = nvgRGBA(170, 170, 170, 255),
     .background_hover = nvgRGBA(190, 190, 190, 255),
     .background_down  = nvgRGBA(150, 150, 150, 255),
-  };
+  ));
+  if (increase_clicked) {
+    fontSize += 5;
+  }
 
-  ButtonConfig decrease_btnconf = {
+  bool decrease_clicked = false;
+  widget_draw(app, button(
     .result           = &decrease_clicked,
     .x                = 200,
     .y                = 50,
@@ -75,19 +77,11 @@ void draw(AppContext *app, void * data) {
     .background       = nvgRGBA(170, 170, 170, 255),
     .background_hover = nvgRGBA(190, 190, 190, 255),
     .background_down  = nvgRGBA(150, 150, 150, 255),
-  };
-
-  widg_button.draw(app, &increase_btnconf);
-  widg_button.draw(app, &decrease_btnconf);
-  if (increase_clicked) {
-    fontSize += 5;
-  }
+  ));
   if (decrease_clicked) {
     fontSize -= 5;
   }
 
-  double heightFactor = 0.71;
-  double heightOffset = fontSize*0.0805;
   nvgBeginPath(app->vg);
   nvgRect(app->vg, 200, 100, fontSize, fontSize);
   nvgFillColor(app->vg, nvgRGBA(255, 0, 0, 255));

@@ -1,12 +1,12 @@
 #include "widgets.h"
 
-DPoint button_draw(AppContext *app, ButtonConfig *conf) {
+DPoint button_draw(AppContext *app, button_t *conf) {
   bool result = false;
 
   float xPadding = 10;
   float yPadding = 10;
-
-  TextConfig label = {
+  
+  widget_t *label = text(
     .font = conf->label_font,
     .size = conf->label_font_size,
     .position = {
@@ -15,9 +15,9 @@ DPoint button_draw(AppContext *app, ButtonConfig *conf) {
     },
     .content = conf->label,
     .color = conf->label_color,
-  };
+  );
 
-  DPoint label_size = widg_text.size(app, &label);
+  DPoint label_size = widget_getsize(app, label);
 
   float min_x  = conf->x;
   float min_y  = conf->y;
@@ -81,18 +81,15 @@ DPoint button_draw(AppContext *app, ButtonConfig *conf) {
     }
   }
 
-  RectConfig background_rect = {
+  widget_draw(app, rect(
     .x = min_x,
     .y = min_y,
     .w = width,
     .h = height,
     .color = background,
-  };
-  widg_rect.draw(app, &background_rect);
+  ));
 
-	//nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
-	//nvgText(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL);
-  widg_text.draw(app, &label);
+  widget_draw(app, label);
 
   *conf->result = result;
 
@@ -102,7 +99,7 @@ DPoint button_draw(AppContext *app, ButtonConfig *conf) {
   };
 }
 
-DPoint button_size(AppContext *app, ButtonConfig *conf) {
+DPoint button_size(AppContext *app, button_t *conf) {
   float xPadding = 10;
   float yPadding = 10;
 
@@ -123,7 +120,3 @@ DPoint button_size(AppContext *app, ButtonConfig *conf) {
   };
 }
 
-Widget widg_button = {
-  .draw = (WidgetDraw) button_draw,
-  .size = (WidgetSize) button_size,
-};
