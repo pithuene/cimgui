@@ -29,7 +29,7 @@ widgets/widgets.a: force_look
 	$(MAKE) -C widgets
 
 main: main.c application.c nanovg/src/nanovg.c ds/libds.a events/events.a font/font.a widgets/widgets.a utils/utils.a 
-	cc -std=c99 -pedantic -Wall $(shell pkg-config --cflags gl glew glfw3) -o main application.c main.c events/events.a font/font.a widgets/widgets.a utils/utils.a ./ds/libds.a ./nanovg/src/nanovg.c -lm $(shell pkg-config --libs gl glew glfw3 )
+	cc -std=c99 -pedantic -Wall $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main application.c main.c events/events.a font/font.a widgets/widgets.a utils/utils.a ./ds/libds.a ./nanovg/src/nanovg.c -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
 
 force_look:
 	true

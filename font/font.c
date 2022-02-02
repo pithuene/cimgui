@@ -4,7 +4,6 @@
 Font register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset) {
   Font font = {
     .name = name,
-    .filename = filename,
     .heightFactor = heightFactor,
     .heightOffset = heightOffset,
   };

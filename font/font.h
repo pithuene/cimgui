@@ -6,7 +6,6 @@
 typedef struct {
   int handle;
   const char *name;
-  const char *filename;
   // TODO: nvgTextMetrics might be able to automate this
   float heightFactor;
   float heightOffset;
