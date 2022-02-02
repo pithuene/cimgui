@@ -7,26 +7,27 @@
 #include "widgets/widgets.h"
 #include "font/font.h"
 
-Font fontNormal = {0};
+typedef struct {
+  Font fontNormal;
+  char text[200];
+  int textlen;
+  int fontSize;
+} State;
 
-char text[200] = "Start: ";
-int textlen = 7;
-int fontSize = 90;
-
-void draw(AppContext *app, void * data) {
+void draw(AppContext *app, State *state) {
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputCharEvent) {
       unsigned int codepoint = event.instance.character.codepoint;
-      text[textlen] = codepoint;
-      textlen++;
+      state->text[state->textlen] = codepoint;
+      state->textlen++;
     }
   }
 
   /* Print btncount */
   char btn_count_str[40];
-  sprintf(btn_count_str, "Button has been clicked: %d times", fontSize);
+  sprintf(btn_count_str, "Button has been clicked: %d times", state->fontSize);
   widget_t *label = text(
-    .font = &fontNormal,
+    .font = &state->fontNormal,
     .size = 10,
     .position = {
       .x = 200,
@@ -54,7 +55,7 @@ void draw(AppContext *app, void * data) {
     .x                = 20,
     .y                = 50,
     .label            = "Increase",
-    .label_font       = &fontNormal,
+    .label_font       = &state->fontNormal,
     .label_font_size  = 14,
     .label_color      = nvgRGBA(0, 0, 0, 255),
     .background       = nvgRGBA(170, 170, 170, 255),
@@ -62,7 +63,7 @@ void draw(AppContext *app, void * data) {
     .background_down  = nvgRGBA(150, 150, 150, 255),
   ));
   if (increase_clicked) {
-    fontSize += 5;
+    state->fontSize += 5;
   }
 
   bool decrease_clicked = false;
@@ -71,7 +72,7 @@ void draw(AppContext *app, void * data) {
     .x                = 200,
     .y                = 50,
     .label            = "Decrease",
-    .label_font       = &fontNormal,
+    .label_font       = &state->fontNormal,
     .label_font_size  = 14,
     .label_color      = nvgRGBA(0, 0, 0, 255),
     .background       = nvgRGBA(170, 170, 170, 255),
@@ -79,27 +80,31 @@ void draw(AppContext *app, void * data) {
     .background_down  = nvgRGBA(150, 150, 150, 255),
   ));
   if (decrease_clicked) {
-    fontSize -= 5;
+    state->fontSize -= 5;
   }
 
   nvgBeginPath(app->vg);
-  nvgRect(app->vg, 200, 100, fontSize, fontSize);
+  nvgRect(app->vg, 200, 100, state->fontSize, state->fontSize);
   nvgFillColor(app->vg, nvgRGBA(255, 0, 0, 255));
   nvgFill(app->vg);
 
   /* Print text */
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  draw_text(app, &fontNormal, fontSize, (DPoint){200, 100}, text);
+  draw_text(app, &state->fontNormal, state->fontSize, (DPoint){200, 100}, state->text);
 }
 
 int main(void) {
-  int counter = 5;
-
   AppContext *app = application_create();
 
-  fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
+  State state =  {
+    .text = "Start: ",
+    .textlen = 7,
+    .fontSize = 90,
+  };
 
-  application_loop(app, draw, &counter);
+  state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
+
+  application_loop(app, (AppLoopFunction) draw, &state);
   application_free(app);
 }

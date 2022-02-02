@@ -34,10 +34,12 @@ typedef struct AppContext {
   _MouseButtonHeldDownState _lastMouseButtonPresses[3];
 } AppContext;
 
+typedef void(*AppLoopFunction)(AppContext *, void *);
+
 AppContext *application_create(void);
 void application_loop(
   AppContext *state,
-  void(*draw)(AppContext*, void *),
+  AppLoopFunction draw,
   void * data
 );
 void application_free(AppContext *state);
