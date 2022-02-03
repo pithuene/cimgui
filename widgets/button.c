@@ -7,20 +7,20 @@ DPoint button_draw(AppContext *app, button_t *conf) {
   float yPadding = 10;
   
   widget_t *label = text(
+    .widget.position = {
+      .x = conf->widget.position.x + xPadding,
+      .y = conf->widget.position.y + yPadding,
+    },
     .font = conf->label_font,
     .size = conf->label_font_size,
-    .position = {
-      .x = conf->x + xPadding,
-      .y = conf->y + yPadding,
-    },
     .content = conf->label,
     .color = conf->label_color,
   );
 
   DPoint label_size = widget_getsize(app, label);
 
-  float min_x  = conf->x;
-  float min_y  = conf->y;
+  float min_x  = conf->widget.position.x;
+  float min_y  = conf->widget.position.y;
   float width  = 2*xPadding + label_size.x;
   float height = 2*yPadding + label_size.y;
 
@@ -82,8 +82,7 @@ DPoint button_draw(AppContext *app, button_t *conf) {
   }
 
   widget_draw(app, rect(
-    .x = min_x,
-    .y = min_y,
+    .widget.position = conf->widget.position,
     .w = width,
     .h = height,
     .color = background,
@@ -108,7 +107,7 @@ DPoint button_size(AppContext *app, button_t *conf) {
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   
   float bounds[4];
-	nvgTextBounds(app->vg, conf->x + xPadding, conf->y + yPadding, conf->label, NULL, bounds);
+	nvgTextBounds(app->vg, conf->widget.position.x + xPadding, conf->widget.position.y + yPadding, conf->label, NULL, bounds);
   bounds[0] -= xPadding;
   bounds[1] -= yPadding;
   bounds[2] += xPadding;

@@ -8,15 +8,15 @@ DPoint text_draw(AppContext *app, text_t *conf) {
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   float bounds[4];
 	nvgTextBounds(app->vg,
-      conf->position.x,
-      conf->position.y - (conf->size * conf->font->heightOffset),
+      conf->widget.position.x,
+      conf->widget.position.y - (conf->size * conf->font->heightOffset),
       conf->content,
       NULL,
       bounds);
 
 	nvgText(app->vg,
-      conf->position.x,
-      conf->position.y - (conf->size * conf->font->heightOffset),
+      conf->widget.position.x,
+      conf->widget.position.y - (conf->size * conf->font->heightOffset),
       conf->content,
       NULL);
 
@@ -32,8 +32,8 @@ DPoint text_size(AppContext *app, text_t *conf) {
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   float bounds[4];
 	nvgTextBounds(app->vg,
-      conf->position.x,
-      conf->position.y - (conf->size * conf->font->heightOffset),
+      conf->widget.position.x,
+      conf->widget.position.y - (conf->size * conf->font->heightOffset),
       conf->content,
       NULL,
       bounds);

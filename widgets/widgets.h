@@ -13,6 +13,8 @@ typedef DPoint(*WidgetSize)(AppContext *, void *);
 typedef struct {
   WidgetDraw draw;
   WidgetSize size;
+  // Upper left corner of the widget
+  DPoint position;
 } widget_t;
 
 DPoint widget_draw(AppContext *context, widget_t *widget);
@@ -20,8 +22,6 @@ DPoint widget_getsize(AppContext *context, widget_t *widget);
 
 typedef struct {
   widget_t widget;
-  float x;
-  float y;
   float w;
   float h;
   NVGcolor color;
@@ -41,7 +41,6 @@ typedef struct {
   widget_t widget;
   Font       *font;
   float       size;
-  DPoint      position;
   const char *content;
   NVGcolor    color;
 } text_t;
@@ -60,8 +59,6 @@ DPoint text_size(AppContext *app, text_t *conf);
 typedef struct {
   widget_t widget;
   bool *result;
-  float x;
-  float y;
   const char *label;
   Font *label_font;
   float label_font_size;
@@ -78,6 +75,23 @@ DPoint button_size(AppContext *app, button_t *conf);
   (widget_t*)&(button_t){ \
     .widget.draw = (WidgetDraw) button_draw, \
     .widget.size = (WidgetSize) button_size, \
+    __VA_ARGS__ \
+  }
+
+typedef struct {
+  widget_t widget;
+  float spacing;
+  int item_count;
+  widget_t **items;
+} row_t;
+
+DPoint row_draw(AppContext *app, row_t *conf);
+DPoint row_size(AppContext *app, row_t *conf);
+
+#define row(...) \
+  (widget_t*)&(row_t){ \
+    .widget.draw = (WidgetDraw) row_draw, \
+    .widget.size = (WidgetSize) row_size, \
     __VA_ARGS__ \
   }
 

@@ -28,12 +28,12 @@ void draw(AppContext *app, State *state) {
   char btn_count_str[40];
   sprintf(btn_count_str, "Button has been clicked: %d times", state->fontSize);
   widget_t *label = text(
-    .font = &state->fontNormal,
-    .size = 10,
-    .position = {
+    .widget.position = {
       .x = 200,
       .y = 200,
     },
+    .font = &state->fontNormal,
+    .size = 10,
     .content = btn_count_str,
     .color = nvgRGB(0, 255, 0),
   );
@@ -41,9 +41,11 @@ void draw(AppContext *app, State *state) {
   DPoint label_size = widget_getsize(app, label);
 
   widget_draw(app, rect(
+    .widget.position = {
+      .x = 200,
+      .y = 200,
+    },
     .color = nvgRGB(255,255,255),
-    .x = 200,
-    .y = 200,
     .w = label_size.x,
     .h = label_size.y,
   ));
@@ -52,9 +54,11 @@ void draw(AppContext *app, State *state) {
 
   bool increase_clicked = false;
   widget_draw(app, button(
+    .widget.position = {
+      .x = 20,
+      .y = 50,
+    },
     .result           = &increase_clicked,
-    .x                = 20,
-    .y                = 50,
     .label            = "Increase",
     .label_font       = &state->fontNormal,
     .label_font_size  = 14,
@@ -69,9 +73,11 @@ void draw(AppContext *app, State *state) {
 
   bool decrease_clicked = false;
   widget_draw(app, button(
+    .widget.position = {
+      .x = 200,
+      .y = 50,
+    },
     .result           = &decrease_clicked,
-    .x                = 200,
-    .y                = 50,
     .label            = "Decrease",
     .label_font       = &state->fontNormal,
     .label_font_size  = 14,
@@ -83,6 +89,26 @@ void draw(AppContext *app, State *state) {
   if (decrease_clicked) {
     state->fontSize -= 5;
   }
+
+  widget_t *myrow = row(
+    .widget.position = {500, 500},
+    .item_count = 2,
+    .items = (widget_t*[]){
+      rect(
+        .color = nvgRGB(0,255,255),
+        .w = 100,
+        .h = 100,
+      ),
+      rect(
+        .color = nvgRGB(255,0,255),
+        .w = 100,
+        .h = 100,
+      ),
+    },
+    .spacing = 20,
+  );
+
+  widget_draw(app, myrow);
 
   nvgBeginPath(app->vg);
   nvgRect(app->vg, 200, 100, state->fontSize, state->fontSize);
