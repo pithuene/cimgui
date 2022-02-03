@@ -93,9 +93,6 @@ void draw(AppContext *app, State *state) {
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   draw_text(app, &state->fontNormal, state->fontSize, (DPoint){200, 100}, state->text);
-  static int i = 0;
-  printf("Draw %d\n", i);
-  i++;
 }
 
 // Given a pattern, returns the path to a font file.
@@ -135,8 +132,8 @@ int main(void) {
     .fontSize = 90,
   };
 
-  //state.fontNormal = load_font(app, "cmr10", 0.685, 0.115);
-  state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
+  state.fontNormal = load_font(app, "cmr10", 0.685, 0.115);
+  //state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
 
   application_loop(app, (AppLoopFunction) draw, &state);
   application_free(app);
