@@ -35,7 +35,7 @@ void draw(AppContext *app, State *state) {
       .y = 200,
     },
     .content = btn_count_str,
-    .color = nvgRGB(0, 0, 0),
+    .color = nvgRGB(0, 255, 0),
   );
 
   DPoint label_size = widget_getsize(app, label);

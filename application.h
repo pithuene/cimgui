@@ -31,6 +31,8 @@ typedef struct AppContext {
   EventQueue eventqueue;
   WindowInfo window;
   DPoint cursor;
+  // Time since last draw. Useful for framerate independent speed.
+  double deltatime;
   _MouseButtonHeldDownState _lastMouseButtonPresses[3];
 } AppContext;
 

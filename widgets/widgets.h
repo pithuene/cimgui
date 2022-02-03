@@ -53,6 +53,7 @@ DPoint text_size(AppContext *app, text_t *conf);
   (widget_t*)&(text_t){ \
     .widget.draw = (WidgetDraw) text_draw, \
     .widget.size = (WidgetSize) text_size, \
+    .color = nvgRGB(0,0,0), \
     __VA_ARGS__ \
   }
 

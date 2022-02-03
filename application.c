@@ -151,28 +151,14 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
   // Set to true to trigger the initial draw.
   bool forceNextFrameDraw = true;
 
-	while (!glfwWindowShouldClose(context->glWindow))
-	{
+	while (!glfwWindowShouldClose(context->glWindow)) {
 		double mx, my, t, dt;
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
-		float gpuTimes[3];
-		int i, n;
     DPoint cursor;
 
 		t = glfwGetTime();
-		dt = t - prevt;
-		prevt = t;
-
-		glfwGetCursorPos(context->glWindow, &mx, &my);
-		glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
-		glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
-
-    cursor = (DPoint){mx, my};
-
-		// Calculate pixel ration for hi-dpi devices.
-		pxRatio = (float)fbWidth / (float)winWidth;
 
     // Draw only if there are events to be handled or if the next frame is forced.
     if (forceNextFrameDraw || !eventqueue_isempty(&context->eventqueue)) {
@@ -184,14 +170,29 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 
       nvgBeginFrame(context->vg, winWidth, winHeight, pxRatio);
 
+      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
+      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
+
+      // Set cursor position
+      glfwGetCursorPos(context->glWindow, &mx, &my);
+      cursor = (DPoint){mx, my};
+      context->cursor = cursor;
+
+      // Calculate deltatime
+      dt = t - prevt;
+      prevt = t;
+      context->deltatime = dt,
+
+      // Calculate pixel ration for hi-dpi devices.
+      pxRatio = (float)fbWidth / (float)winWidth;
+
       context->window = (WindowInfo){
         .height = winHeight,
         .width = winWidth,
         .fbHeight = fbHeight,
         .fbWidth = fbWidth,
-        .pxRatio = pxRatio
+        .pxRatio = pxRatio,
       };
-      context->cursor = cursor;
 
       // Call the draw function
       (*draw)(context, data);

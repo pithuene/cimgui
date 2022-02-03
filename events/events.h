@@ -19,7 +19,7 @@ typedef enum {
 } ButtonAction;
 
 // Doesn't hold any information but triggers a draw since the eventqueue is not empty
-typedef struct {} NopEvent;
+typedef char NopEvent;
 
 typedef struct {
   int          key;

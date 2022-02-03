@@ -6,7 +6,7 @@ RES  := widgets.a
 all: $(RES)
 
 %.o: %.c
-	$(CC) -c $< -o $@
+	$(CC) $(PARENT_CFLAGS) -c $< -o $@
 
 $(RES): $(OBJS)
 	ar cr $(RES) $(OBJS)
