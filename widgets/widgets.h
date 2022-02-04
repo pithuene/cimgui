@@ -39,6 +39,24 @@ DPoint rect_size(AppContext *app, rect_t *conf);
 
 typedef struct {
   widget_t widget;
+  float radius;
+  NVGcolor color;
+} circle_t;
+
+DPoint circle_draw(AppContext *app, circle_t *conf);
+DPoint circle_size(AppContext *app, circle_t *conf);
+// Helper to cet circle center position
+DPoint circle_center_at(DPoint center, float radius);
+
+#define circle(...) \
+  (widget_t*)&(circle_t){ \
+    .widget.draw = (WidgetDraw) circle_draw, \
+    .widget.size = (WidgetSize) circle_size, \
+    __VA_ARGS__ \
+  }
+
+typedef struct {
+  widget_t widget;
   Font       *font;
   float       size;
   const char *content;
@@ -92,6 +110,28 @@ DPoint row_size(AppContext *app, row_t *conf);
   (widget_t*)&(row_t){ \
     .widget.draw = (WidgetDraw) row_draw, \
     .widget.size = (WidgetSize) row_size, \
+    __VA_ARGS__ \
+  }
+
+typedef struct {
+  widget_t widget;
+  Font    *font;
+  int     *value;
+  int      min;
+  int      max;
+  int      step;
+} slider_t;
+
+DPoint slider_draw(AppContext *app, slider_t *conf);
+DPoint slider_size(AppContext *app, slider_t *conf);
+
+#define slider(...) \
+  (widget_t*)&(slider_t){ \
+    .widget.draw = (WidgetDraw) slider_draw, \
+    .widget.size = (WidgetSize) slider_size, \
+    .min = 0, \
+    .min = 100, \
+    .step = 1, \
     __VA_ARGS__ \
   }
 

@@ -35,7 +35,6 @@ void draw(AppContext *app, State *state) {
     .font = &state->fontNormal,
     .size = 10,
     .content = btn_count_str,
-    .color = nvgRGB(0, 255, 0),
   );
 
   DPoint label_size = widget_getsize(app, label);
@@ -90,14 +89,61 @@ void draw(AppContext *app, State *state) {
     state->fontSize -= 5;
   }
 
+  static int slider_value = 50;
+
+  widget_draw(app, slider(
+    .widget.position.x = 300,
+    .widget.position.y = 270,
+    .font = &state->fontNormal,
+    .min = 0,
+    .max = 100,
+    .step = 1,
+    .value = &slider_value,
+  ));
+
+  char minlabel[10];
+  char maxlabel[10];
+  sprintf(minlabel, "%d", 5);
+  sprintf(maxlabel, "%d", 100);
+
+  widget_draw(app,
+    row(
+      .widget.position.x = 300,
+      .widget.position.y = 300,
+      .item_count = 3,
+      .items = (widget_t*[]){
+        text(
+          .font = &state->fontNormal,
+          .size = 10,
+          .content = minlabel,
+        ),
+        slider(
+          .font = &state->fontNormal,
+          .min = 5,
+          .max = 100,
+          .step = 1,
+          .value = &state->fontSize,
+        ),
+        text(
+          .font = &state->fontNormal,
+          .size = 10,
+          .content = maxlabel,
+        ),
+      }
+  ));
+
   widget_t *myrow = row(
     .widget.position = {500, 500},
-    .item_count = 2,
+    .item_count = 3,
     .items = (widget_t*[]){
       rect(
         .color = nvgRGB(0,255,255),
         .w = 100,
         .h = 100,
+      ),
+      circle(
+        .color = nvgRGB(255,255,0),
+        .radius = 50,
       ),
       rect(
         .color = nvgRGB(255,0,255),
@@ -105,8 +151,20 @@ void draw(AppContext *app, State *state) {
         .h = 100,
       ),
     },
-    .spacing = 20,
+    .spacing = slider_value,
   );
+
+  /* Print slider_value */
+  sprintf(btn_count_str, "Slider value: %d", slider_value);
+  widget_draw(app, text(
+    .widget.position = {
+      .x = 300,
+      .y = 250,
+    },
+    .font = &state->fontNormal,
+    .size = 10,
+    .content = btn_count_str,
+  ));
 
   widget_draw(app, myrow);
 
@@ -158,7 +216,7 @@ int main(void) {
     .fontSize = 90,
   };
 
-  state.fontNormal = load_font(app, "cmr10", 0.685, 0.115);
+  state.fontNormal = load_font(app, "monospace", 0.685, 0.115);
   //state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
 
   application_loop(app, (AppLoopFunction) draw, &state);
