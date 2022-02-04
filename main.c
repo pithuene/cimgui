@@ -194,10 +194,16 @@ Font load_font(AppContext *app, char * input_pattern, float heightFactor, float 
   FcPattern *font_pattern = FcFontMatch(config, pattern, &result);
   if (font_pattern) {
     FcChar8 *file = NULL;
-    if (FcPatternGetString(font_pattern, FC_FILE, 0, &file) ==FcResultMatch) {
+    if (FcPatternGetString(font_pattern, FC_FILE, 0, &file) == FcResultMatch) {
       fontFile = (char*) file;
       font = register_font(app, input_pattern, fontFile, heightFactor, heightOffset);
+    } else {
+      printf("No font matches!\n");
+      exit(1);
     }
+  } else {
+    printf("Font pattern not found!\n");
+    exit(1);
   }
 
   FcPatternDestroy(font_pattern);

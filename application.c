@@ -141,6 +141,7 @@ struct AppContext *application_create(void) {
 
 
 void application_loop(struct AppContext *context, void(*draw)(struct AppContext*, void *), void * data) {
+  double t = glfwGetTime();
 	double prevt = 0;
 	glfwSwapInterval(0);
 
@@ -152,7 +153,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
   bool forceNextFrameDraw = true;
 
 	while (!glfwWindowShouldClose(context->glWindow)) {
-		double mx, my, t, dt;
+		double mx, my, dt;
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
@@ -224,7 +225,13 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
     double endTime = glfwGetTime();
     double targetFrameTime = 1000000/60;
     double frameTime = (endTime - t) * 1000000;
-    usleep(targetFrameTime - frameTime);
+    double sleepTime = targetFrameTime - frameTime;
+
+    // Drawing takes so long, that FPS is below target anyways.
+    // No sleep required.
+    if (sleepTime > 0) {
+      usleep(sleepTime);
+    }
 
     _MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
       context->_lastMouseButtonPresses[0],
