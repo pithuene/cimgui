@@ -37,7 +37,7 @@ void draw(AppContext *app, State *state) {
     .content = btn_count_str,
   );
 
-  DPoint label_size = widget_getsize(app, label);
+  point_t label_size = widget_getsize(app, label);
 
   widget_draw(app, rect(
     .widget.position = {
@@ -176,7 +176,7 @@ void draw(AppContext *app, State *state) {
   /* Print text */
 	nvgFillColor(app->vg, nvgRGBA(0,0,0,255));
 	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  draw_text(app, &state->fontNormal, state->fontSize, (DPoint){200, 100}, state->text);
+  draw_text(app, &state->fontNormal, state->fontSize, (point_t){200, 100}, state->text);
 }
 
 // Given a pattern, returns the path to a font file.

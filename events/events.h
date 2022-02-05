@@ -35,7 +35,7 @@ typedef struct {
 
 typedef struct {
   MouseButton  button;
-  DPoint       cursor;
+  point_t       cursor;
   int          mods;
 } MouseButtonPressEvent;
 
@@ -44,7 +44,7 @@ typedef struct {
   MouseButtonPressEvent initialPress;
   MouseButton           button;
   // Where the cursor was this frame
-  DPoint                cursor;
+  point_t                cursor;
   int                   mods;
 } MouseButtonHeldDownEvent;
 
@@ -53,7 +53,7 @@ typedef struct {
   MouseButtonPressEvent initialPress;
   MouseButton           button;
   // Where the cursor was released
-  DPoint                cursor;
+  point_t                cursor;
   int                   mods;
 } MouseButtonReleaseEvent;
 
@@ -82,9 +82,9 @@ typedef struct {
 InputEvent nop_event(void);
 InputEvent key_event(int key, int scancode, ButtonAction action, int mods);
 InputEvent char_event(unsigned int codepoint, int mods);
-InputEvent mousebuttonpress_event(MouseButton button, DPoint cursor, int mods);
-InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods);
-InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods);
+InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods);
+InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods);
+InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods);
 
 typedef struct EventQueueItem {
   InputEvent event;

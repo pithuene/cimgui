@@ -2,23 +2,22 @@
 #define _WIDGETS_H
 
 #include <stdbool.h>
-#include "../utils/utils.h"
 #include "../application.h"
 #include "../nanovg/src/nanovg.h"
 #include "../font/font.h"
 
-typedef DPoint(*WidgetDraw)(AppContext *, void *);
-typedef DPoint(*WidgetSize)(AppContext *, void *);
+typedef point_t(*WidgetDraw)(AppContext *, void *);
+typedef point_t(*WidgetSize)(AppContext *, void *);
 
 typedef struct {
   WidgetDraw draw;
   WidgetSize size;
   // Upper left corner of the widget
-  DPoint position;
+  point_t position;
 } widget_t;
 
-DPoint widget_draw(AppContext *context, widget_t *widget);
-DPoint widget_getsize(AppContext *context, widget_t *widget);
+point_t widget_draw(AppContext *context, widget_t *widget);
+point_t widget_getsize(AppContext *context, widget_t *widget);
 
 typedef struct {
   widget_t widget;
@@ -27,8 +26,8 @@ typedef struct {
   NVGcolor color;
 } rect_t;
 
-DPoint rect_draw(AppContext *app, rect_t *conf);
-DPoint rect_size(AppContext *app, rect_t *conf);
+point_t rect_draw(AppContext *app, rect_t *conf);
+point_t rect_size(AppContext *app, rect_t *conf);
 
 #define rect(...) \
   (widget_t*)&(rect_t){ \
@@ -43,10 +42,10 @@ typedef struct {
   NVGcolor color;
 } circle_t;
 
-DPoint circle_draw(AppContext *app, circle_t *conf);
-DPoint circle_size(AppContext *app, circle_t *conf);
+point_t circle_draw(AppContext *app, circle_t *conf);
+point_t circle_size(AppContext *app, circle_t *conf);
 // Helper to cet circle center position
-DPoint circle_center_at(DPoint center, float radius);
+point_t circle_center_at(point_t center, float radius);
 
 #define circle(...) \
   (widget_t*)&(circle_t){ \
@@ -63,8 +62,8 @@ typedef struct {
   NVGcolor    color;
 } text_t;
 
-DPoint text_draw(AppContext *app, text_t *conf);
-DPoint text_size(AppContext *app, text_t *conf);
+point_t text_draw(AppContext *app, text_t *conf);
+point_t text_size(AppContext *app, text_t *conf);
 
 #define text(...) \
   (widget_t*)&(text_t){ \
@@ -86,8 +85,8 @@ typedef struct {
   NVGcolor background_down;
 } button_t;
 
-DPoint button_draw(AppContext *app, button_t *conf);
-DPoint button_size(AppContext *app, button_t *conf);
+point_t button_draw(AppContext *app, button_t *conf);
+point_t button_size(AppContext *app, button_t *conf);
 
 #define button(...) \
   (widget_t*)&(button_t){ \
@@ -103,8 +102,8 @@ typedef struct {
   widget_t **items;
 } row_t;
 
-DPoint row_draw(AppContext *app, row_t *conf);
-DPoint row_size(AppContext *app, row_t *conf);
+point_t row_draw(AppContext *app, row_t *conf);
+point_t row_size(AppContext *app, row_t *conf);
 
 #define row(...) \
   (widget_t*)&(row_t){ \
@@ -122,8 +121,8 @@ typedef struct {
   int      step;
 } slider_t;
 
-DPoint slider_draw(AppContext *app, slider_t *conf);
-DPoint slider_size(AppContext *app, slider_t *conf);
+point_t slider_draw(AppContext *app, slider_t *conf);
+point_t slider_size(AppContext *app, slider_t *conf);
 
 #define slider(...) \
   (widget_t*)&(slider_t){ \

@@ -28,14 +28,12 @@ font/font.a: force_look
 events/events.a: force_look
 	$(MAKE) -C events PARENT_CFLAGS="$(CFLAGS)"
 
-utils/utils.a: force_look
-	$(MAKE) -C utils PARENT_CFLAGS="$(CFLAGS)"
-
 widgets/widgets.a: force_look
 	$(MAKE) -C widgets PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a widgets/widgets.a utils/utils.a 
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main application.c main.c events/events.a font/font.a widgets/widgets.a utils/utils.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
+main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a widgets/widgets.a
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c events/events.a font/font.a widgets/widgets.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
+
 
 force_look:
 	true

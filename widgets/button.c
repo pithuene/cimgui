@@ -1,6 +1,6 @@
 #include "widgets.h"
 
-DPoint button_draw(AppContext *app, button_t *conf) {
+point_t button_draw(AppContext *app, button_t *conf) {
   bool result = false;
 
   float xPadding = 10;
@@ -17,64 +17,32 @@ DPoint button_draw(AppContext *app, button_t *conf) {
     .color = conf->label_color,
   );
 
-  DPoint label_size = widget_getsize(app, label);
+  point_t label_size = widget_getsize(app, label);
 
-  float min_x  = conf->widget.position.x;
-  float min_y  = conf->widget.position.y;
-  float width  = 2*xPadding + label_size.x;
-  float height = 2*yPadding + label_size.y;
+  bbox_t button_bounds = bbox_from_dims(
+      (point_t){conf->widget.position.x, conf->widget.position.y},
+      2*xPadding + label_size.x,
+      2*yPadding + label_size.y
+  );
 
-  bool hover = 
-    intersects_point_rect(
-      app->cursor.x, app->cursor.y,
-      min_x,
-      min_y,
-      width,
-      height
-    );
+  bool hover = intersects_point_bbox(app->cursor, button_bounds);
+
   NVGcolor background = hover ? conf->background_hover : conf->background;
+
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputMouseButtonPressEvent) {
-      bool press_over_btn = 
-        intersects_point_rect(
-          event.instance.mousebuttonpress.cursor.x, event.instance.mousebuttonpress.cursor.y,
-          min_x,
-          min_y,
-          width,
-          height
-        );
+      const bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonpress.cursor, button_bounds);
       if (press_over_btn) {
         background = conf->background_down;
       }
     } else if (event.type == InputMouseButtonHeldDownEvent) {
-      bool press_over_btn = 
-        intersects_point_rect(
-          event.instance.mousebuttonhelddown.initialPress.cursor.x, event.instance.mousebuttonhelddown.initialPress.cursor.y,
-          min_x,
-          min_y,
-          width,
-          height
-        );
+      bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonhelddown.initialPress.cursor, button_bounds);
       if (press_over_btn) {
         background = conf->background_down;
       }
     } else if (event.type == InputMouseButtonReleaseEvent) {
-      bool press_over_btn = 
-        intersects_point_rect(
-          event.instance.mousebuttonrelease.initialPress.cursor.x, event.instance.mousebuttonrelease.initialPress.cursor.y,
-          min_x,
-          min_y,
-          width,
-          height
-        );
-      bool release_over_btn = 
-        intersects_point_rect(
-          event.instance.mousebuttonrelease.cursor.x, event.instance.mousebuttonrelease.cursor.y,
-          min_x,
-          min_y,
-          width,
-          height
-        );
+      bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonrelease.initialPress.cursor, button_bounds);
+      bool release_over_btn = intersects_point_bbox(event.instance.mousebuttonrelease.cursor, button_bounds);
       if (press_over_btn && release_over_btn) {
         result = true;
       }
@@ -83,8 +51,8 @@ DPoint button_draw(AppContext *app, button_t *conf) {
 
   widget_draw(app, rect(
     .widget.position = conf->widget.position,
-    .w = width,
-    .h = height,
+    .w = bbox_width(button_bounds),
+    .h = bbox_height(button_bounds),
     .color = background,
   ));
 
@@ -92,13 +60,10 @@ DPoint button_draw(AppContext *app, button_t *conf) {
 
   *conf->result = result;
 
-  return (DPoint){
-    .x = width,
-    .y = height,
-  };
+  return bbox_dims(button_bounds);
 }
 
-DPoint button_size(AppContext *app, button_t *conf) {
+point_t button_size(AppContext *app, button_t *conf) {
   float xPadding = 10;
   float yPadding = 10;
 
@@ -113,7 +78,7 @@ DPoint button_size(AppContext *app, button_t *conf) {
   bounds[2] += xPadding;
   bounds[3] += yPadding;
 
-  return (DPoint){
+  return (point_t){
     .x = bounds[2] - bounds[0],
     .y = bounds[3] - bounds[1],
   };

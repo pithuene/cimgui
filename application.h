@@ -3,6 +3,7 @@
 
 #include <GLFW/glfw3.h>
 #include "nanovg/src/nanovg.h"
+#include "utils/utils.h"
 #include "events/events.h"
 #include "ds/mem/arenaalloc.h"
 
@@ -30,7 +31,7 @@ typedef struct AppContext {
   arena_allocator_t frameArena;
   EventQueue eventqueue;
   WindowInfo window;
-  DPoint cursor;
+  point_t cursor;
   // Time since last draw. Useful for framerate independent speed.
   double deltatime;
   _MouseButtonHeldDownState _lastMouseButtonPresses[3];

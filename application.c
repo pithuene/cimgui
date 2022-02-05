@@ -4,6 +4,8 @@
 #	define GLFW_INCLUDE_GLCOREARB
 #endif
 #include <GL/glew.h>
+#define IMPLEMENTATION_UTILS_H
+#include "utils/utils.h"
 #include "application.h"
 #define GLFW_INCLUDE_GLEXT
 #include <GLFW/glfw3.h>
@@ -157,7 +159,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
 		float pxRatio;
-    DPoint cursor;
+    point_t cursor;
 
 		t = glfwGetTime();
 
@@ -176,7 +178,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 
       // Set cursor position
       glfwGetCursorPos(context->glWindow, &mx, &my);
-      cursor = (DPoint){mx, my};
+      cursor = (point_t){mx, my};
       context->cursor = cursor;
 
       // Calculate deltatime

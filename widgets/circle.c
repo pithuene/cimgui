@@ -1,13 +1,13 @@
 #include "widgets.h"
 
-DPoint circle_center_at(DPoint center, float radius) {
-  return (DPoint){
+point_t circle_center_at(point_t center, float radius) {
+  return (point_t){
     .x = center.x - radius,
     .y = center.y - radius,
   };
 }
 
-DPoint circle_draw(AppContext *app, circle_t *conf) {
+point_t circle_draw(AppContext *app, circle_t *conf) {
   nvgBeginPath(app->vg);
   nvgCircle(
       app->vg,
@@ -17,14 +17,14 @@ DPoint circle_draw(AppContext *app, circle_t *conf) {
   nvgFillColor(app->vg, conf->color);
   nvgFill(app->vg);
 
-  return (DPoint){
+  return (point_t){
     .x = 2*conf->radius,
     .y = 2*conf->radius,
   };
 }
 
-DPoint circle_size(AppContext *app, circle_t *conf) {
-  return (DPoint){
+point_t circle_size(AppContext *app, circle_t *conf) {
+  return (point_t){
     .x = 2*conf->radius,
     .y = 2*conf->radius,
   };

@@ -11,7 +11,7 @@ Font register_font(AppContext *context, const char *name, const char *filename, 
   return font;
 }
 
-void draw_text(AppContext *context, Font *font, float size, DPoint pos, const char *content) {
+void draw_text(AppContext *context, Font *font, float size, point_t pos, const char *content) {
 	nvgFontSize(context->vg, (float)size/font->heightFactor);
 	nvgFontFace(context->vg, font->name);
 	nvgText(context->vg, pos.x, pos.y - (size * font->heightOffset), content, NULL);

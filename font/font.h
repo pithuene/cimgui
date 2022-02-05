@@ -13,6 +13,6 @@ typedef struct {
 
 Font register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset);
 
-void draw_text(AppContext *context, Font *font, float size, DPoint pos, const char *content);
+void draw_text(AppContext *context, Font *font, float size, point_t pos, const char *content);
 
 #endif

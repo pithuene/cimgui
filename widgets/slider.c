@@ -1,8 +1,9 @@
 #include "widgets.h"
+#include "../utils/utils.h"
 #include <math.h>
 #include <stdio.h>
 
-DPoint slider_draw(AppContext *app, slider_t *conf) {
+point_t slider_draw(AppContext *app, slider_t *conf) {
   NVGcolor track_color = nvgRGB(66, 66, 66);
   NVGcolor track_value_color = nvgRGB(150, 150, 150);
   NVGcolor track_value_color_active = nvgRGB(20, 192, 80);
@@ -12,59 +13,50 @@ DPoint slider_draw(AppContext *app, slider_t *conf) {
   float track_width = 200;
   float track_line_width = 2;
 
-  bool is_being_hovered = 
-    intersects_point_rect(
-      app->cursor.x, app->cursor.y,
-      conf->widget.position.x + slider_radius,
-      conf->widget.position.y,
+  bbox_t widget_bounds = bbox_from_dims(
+      (point_t){conf->widget.position.x + slider_radius, conf->widget.position.y},
       track_width,
-      2*slider_radius
-    );
+      2*slider_radius);
+
+  const bool is_being_hovered = intersects_point_bbox(app->cursor, widget_bounds);
   bool is_active = is_being_hovered;
   bool is_being_dragged = false;
 
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputMouseButtonPressEvent || 
         event.type == InputMouseButtonHeldDownEvent) {
-      DPoint relevant_click;
+      point_t relevant_click;
       if (event.type == InputMouseButtonPressEvent)
         relevant_click = event.instance.mousebuttonpress.cursor;
       if (event.type == InputMouseButtonHeldDownEvent)
         relevant_click = event.instance.mousebuttonhelddown.initialPress.cursor;
 
-      is_being_dragged = 
-        intersects_point_rect(
-          relevant_click.x, relevant_click.y,
-          conf->widget.position.x + slider_radius,
-          conf->widget.position.y,
-          track_width,
-          2*slider_radius
-        );
+      is_being_dragged = intersects_point_bbox(relevant_click, widget_bounds);
 
       if (is_being_dragged) {
         is_active = true;
         float cursor_x = app->cursor.x;
-        // Clamping
-        if (cursor_x < conf->widget.position.x + slider_radius)
-          cursor_x = conf->widget.position.x + slider_radius;
-        if (cursor_x > conf->widget.position.x + slider_radius + track_width - track_line_width)
-          cursor_x = conf->widget.position.x + slider_radius + slider_radius + track_width - track_line_width;
-        float slider_offset = (cursor_x - (conf->widget.position.x + slider_radius)) / track_width;
+        clamp_float(
+            &cursor_x,
+            conf->widget.position.x + slider_radius,
+            conf->widget.position.x + slider_radius + track_width);
+
+        // The relative position on the track, between 0 and 1
+        const float slider_offset = (cursor_x - (conf->widget.position.x + slider_radius)) / track_width;
 
         int value = round((conf->max - conf->min) * slider_offset + conf->min);
-        if (value < conf->min) value = conf->min;
-        if (value > conf->max) value = conf->max;
+        clamp_int(&value, conf->min, conf->max);
         *conf->value = value;
       }
     }
   }
 
-  DPoint track_position = {
+  point_t track_position = {
     .x = conf->widget.position.x + slider_radius,
     .y = conf->widget.position.y + slider_radius - (track_line_width / 2),
   };
 
-  DPoint slider_center = {
+  point_t slider_center = {
     .x = track_position.x,
     .y = track_position.y + (track_line_width / 2),
   };
@@ -108,7 +100,7 @@ DPoint slider_draw(AppContext *app, slider_t *conf) {
     // Draw value label
     char valuelabel[10];
     sprintf(valuelabel, "%d", *conf->value);
-    DPoint value_label_position = circle_center_at(slider_center, slider_radius);
+    point_t value_label_position = circle_center_at(slider_center, slider_radius);
     value_label_position.y += 25;
     widget_draw(app, text(
       .widget.position = value_label_position,
@@ -119,15 +111,15 @@ DPoint slider_draw(AppContext *app, slider_t *conf) {
   }
 
 
-  return (DPoint){
+  return (point_t){
     .x = track_width+2*slider_radius,
     .y = 2*slider_radius,
   };
 }
 
-DPoint slider_size(AppContext *app, slider_t *conf) {
+point_t slider_size(AppContext *app, slider_t *conf) {
   float slider_radius = 10;
-  return (DPoint){
+  return (point_t){
     .x = 200,
     .y = 2*slider_radius,
   };

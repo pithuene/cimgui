@@ -28,7 +28,7 @@ InputEvent char_event(unsigned int codepoint, int mods) {
   };
 }
 
-InputEvent mousebuttonpress_event(MouseButton button, DPoint cursor, int mods) {
+InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
     .type = InputMouseButtonPressEvent,
     .instance.mousebuttonpress = {
@@ -39,7 +39,7 @@ InputEvent mousebuttonpress_event(MouseButton button, DPoint cursor, int mods) {
   };
 }
 
-InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods) {
+InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
     .type = InputMouseButtonHeldDownEvent,
     .instance.mousebuttonhelddown = {
@@ -51,7 +51,7 @@ InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton bu
   };
 }
 
-InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, DPoint cursor, int mods) {
+InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
     .type = InputMouseButtonReleaseEvent,
     .instance.mousebuttonrelease = {

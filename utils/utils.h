@@ -6,8 +6,73 @@
 typedef struct {
   double x;
   double y;
-} DPoint;
+} point_t;
 
-bool intersects_point_rect(float px, float py, float rx, float ry, float rw, float rh);
+typedef struct {
+  // Top left corner
+  point_t min;
+  // Bottom right corner
+  point_t max;
+} bbox_t;
+
+#ifdef IMPLEMENTATION_UTILS_H
+#undef IMPLEMENTATION_UTILS_H
+
+bool intersects_point_bbox(point_t point, bbox_t box);
+bbox_t bbox_from_dims(point_t topleft, float width, float height);
+point_t bbox_dims(bbox_t bbox);
+float bbox_width(bbox_t bbox);
+float bbox_height(bbox_t bbox);
+void clamp_float(float *target, float min, float max);
+void clamp_int(int *target, int min, int max);
+
+#endif
+
+// Checks whether a point is inside a bounding box
+inline bool intersects_point_bbox(point_t point, bbox_t box) {
+  return box.min.x <= point.x && point.x <= box.max.x &&
+         box.min.y <= point.y && point.y <= box.max.y;
+}
+
+// Creates a bounding box from coordinates (top left) and dimensions
+inline bbox_t bbox_from_dims(point_t topleft, float width, float height) {
+  return (bbox_t){
+    .min = topleft,
+    .max = {
+      .x = topleft.x + width,
+      .y = topleft.y + height,
+    },
+  };
+}
+
+// Get the dimensions of a bounding box
+inline point_t bbox_dims(bbox_t bbox) {
+  return (point_t){
+    .x = bbox.max.x - bbox.min.x,
+    .y = bbox.max.y - bbox.min.y,
+  };
+}
+
+// Get the width of a bounding box
+inline float bbox_width(bbox_t bbox) {
+  return bbox.max.x - bbox.min.x;
+}
+
+// Get the height of a bounding box
+inline float bbox_height(bbox_t bbox) {
+  return bbox.max.y - bbox.min.y;
+}
+
+// Clamp a float value to a given range
+inline void clamp_float(float *target, float min, float max) {
+  if (*target < min) *target = min;
+  else if (*target > max) *target = max;
+}
+
+// Clamp a float value to a given range
+inline void clamp_int(int *target, int min, int max) {
+  if (*target < min) *target = min;
+  else if (*target > max) *target = max;
+}
 
 #endif
