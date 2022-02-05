@@ -47,6 +47,10 @@ point_t slider_draw(AppContext *app, slider_t *conf) {
         int value = round((conf->max - conf->min) * slider_offset + conf->min);
         clamp_int(&value, conf->min, conf->max);
         *conf->value = value;
+      } else {
+        // If a drag is ongoing, but it didn't start over the widget (so something unrelated is being dragged)
+        // Don't show the slider
+        is_active = false;
       }
     }
   }
