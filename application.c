@@ -171,10 +171,13 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-      nvgBeginFrame(context->vg, winWidth, winHeight, pxRatio);
-
       glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
       glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
+
+      // Calculate pixel ration for hi-dpi devices.
+      pxRatio = (float)fbWidth / (float)winWidth;
+
+      nvgBeginFrame(context->vg, winWidth, winHeight, pxRatio);
 
       // Set cursor position
       glfwGetCursorPos(context->glWindow, &mx, &my);
@@ -185,9 +188,6 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       dt = t - prevt;
       prevt = t;
       context->deltatime = dt,
-
-      // Calculate pixel ration for hi-dpi devices.
-      pxRatio = (float)fbWidth / (float)winWidth;
 
       context->window = (WindowInfo){
         .height = winHeight,
