@@ -1,26 +1,22 @@
 #include "widgets.h"
 
-point_t button_draw(AppContext *app, button_t *conf) {
+point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf) {
   bool result = false;
 
   float xPadding = 10;
   float yPadding = 10;
   
   widget_t *label = text(
-    .widget.position = {
-      .x = conf->widget.position.x + xPadding,
-      .y = conf->widget.position.y + yPadding,
-    },
     .font = conf->label_font,
     .size = conf->label_font_size,
     .content = conf->label,
     .color = conf->label_color,
   );
 
-  point_t label_size = widget_getsize(app, label);
+  point_t label_size = widget_getsize(app, constraints, label);
 
   bbox_t button_bounds = bbox_from_dims(
-      (point_t){conf->widget.position.x, conf->widget.position.y},
+      (point_t){constraints.min.x, constraints.min.y},
       2*xPadding + label_size.x,
       2*yPadding + label_size.y
   );
@@ -49,38 +45,31 @@ point_t button_draw(AppContext *app, button_t *conf) {
     }
   }
 
-  widget_draw(app, rect(
-    .widget.position = conf->widget.position,
-    .w = bbox_width(button_bounds),
-    .h = bbox_height(button_bounds),
+  widget_draw(app, button_bounds, rect(
     .color = background,
   ));
 
-  widget_draw(app, label);
+  widget_draw(app, bbox_move(constraints, (point_t){xPadding, yPadding}), label);
 
   *conf->result = result;
 
   return bbox_dims(button_bounds);
 }
 
-point_t button_size(AppContext *app, button_t *conf) {
+point_t button_size(AppContext *app, bbox_t constraints, button_t *conf) {
   float xPadding = 10;
   float yPadding = 10;
 
-	nvgFontSize(app->vg, 20);
-	nvgFontFace(app->vg, "sans");
-	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  
-  float bounds[4];
-	nvgTextBounds(app->vg, conf->widget.position.x + xPadding, conf->widget.position.y + yPadding, conf->label, NULL, bounds);
-  bounds[0] -= xPadding;
-  bounds[1] -= yPadding;
-  bounds[2] += xPadding;
-  bounds[3] += yPadding;
+  widget_t *label = text(
+    .font = conf->label_font,
+    .size = conf->label_font_size,
+    .content = conf->label,
+  );
+  point_t label_size = widget_getsize(app, constraints, label);
 
   return (point_t){
-    .x = bounds[2] - bounds[0],
-    .y = bounds[3] - bounds[1],
+    .x = 2*xPadding + label_size.x,
+    .y = 2*yPadding + label_size.y,
   };
 }
 

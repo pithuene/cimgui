@@ -11,7 +11,6 @@ run: main
 clean:
 	make -C events clean
 	make -C font clean
-	make -C utils clean
 	make -C widgets clean
 	rm -f nanovg.o
 	rm -f main

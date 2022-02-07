@@ -6,28 +6,30 @@
 #include "../nanovg/src/nanovg.h"
 #include "../font/font.h"
 
-typedef point_t(*WidgetDraw)(AppContext *, void *);
-typedef point_t(*WidgetSize)(AppContext *, void *);
+// Draw a widget into some constraints given as a bounding box.
+// The widget must be drawn into the upper left corner of the contstraints.
+// Returns the actual size of the drawn widget.
+typedef point_t(*WidgetDraw)(AppContext *, bbox_t, void *);
+// Calculate the size of a widget without actually drawing it.
+typedef point_t(*WidgetSize)(AppContext *, bbox_t, void *);
 
 typedef struct {
   WidgetDraw draw;
   WidgetSize size;
-  // Upper left corner of the widget
-  point_t position;
 } widget_t;
 
-point_t widget_draw(AppContext *context, widget_t *widget);
-point_t widget_getsize(AppContext *context, widget_t *widget);
+#define CONSTRAINT_NONE ((bbox_t){ .min = {0, 0}, .max = {999999, 999999}})
+
+point_t widget_draw(AppContext *context, bbox_t contstraints, widget_t *widget);
+point_t widget_getsize(AppContext *context, bbox_t contstraints, widget_t *widget);
 
 typedef struct {
   widget_t widget;
-  float w;
-  float h;
   NVGcolor color;
 } rect_t;
 
-point_t rect_draw(AppContext *app, rect_t *conf);
-point_t rect_size(AppContext *app, rect_t *conf);
+point_t rect_draw(AppContext *app, bbox_t contstraints, rect_t *conf);
+point_t rect_size(AppContext *app, bbox_t contstraints, rect_t *conf);
 
 #define rect(...) \
   (widget_t*)&(rect_t){ \
@@ -38,14 +40,13 @@ point_t rect_size(AppContext *app, rect_t *conf);
 
 typedef struct {
   widget_t widget;
-  float radius;
   NVGcolor color;
 } circle_t;
 
-point_t circle_draw(AppContext *app, circle_t *conf);
-point_t circle_size(AppContext *app, circle_t *conf);
-// Helper to cet circle center position
-point_t circle_center_at(point_t center, float radius);
+point_t circle_draw(AppContext *app, bbox_t constraints, circle_t *conf);
+point_t circle_size(AppContext *app, bbox_t constraints, circle_t *conf);
+// Helper to generate bbox for a circle
+bbox_t circle_center_at(point_t center, float radius);
 
 #define circle(...) \
   (widget_t*)&(circle_t){ \
@@ -62,8 +63,8 @@ typedef struct {
   NVGcolor    color;
 } text_t;
 
-point_t text_draw(AppContext *app, text_t *conf);
-point_t text_size(AppContext *app, text_t *conf);
+point_t text_draw(AppContext *app, bbox_t constraints, text_t *conf);
+point_t text_size(AppContext *app, bbox_t constraints, text_t *conf);
 
 #define text(...) \
   (widget_t*)&(text_t){ \
@@ -85,8 +86,8 @@ typedef struct {
   NVGcolor background_down;
 } button_t;
 
-point_t button_draw(AppContext *app, button_t *conf);
-point_t button_size(AppContext *app, button_t *conf);
+point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf);
+point_t button_size(AppContext *app, bbox_t constraints, button_t *conf);
 
 #define button(...) \
   (widget_t*)&(button_t){ \
@@ -102,8 +103,8 @@ typedef struct {
   widget_t **items;
 } row_t;
 
-point_t row_draw(AppContext *app, row_t *conf);
-point_t row_size(AppContext *app, row_t *conf);
+point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf);
+point_t row_size(AppContext *app, bbox_t constraints, row_t *conf);
 
 #define row(...) \
   (widget_t*)&(row_t){ \
@@ -121,8 +122,8 @@ typedef struct {
   int      step;
 } slider_t;
 
-point_t slider_draw(AppContext *app, slider_t *conf);
-point_t slider_size(AppContext *app, slider_t *conf);
+point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf);
+point_t slider_size(AppContext *app, bbox_t constraints, slider_t *conf);
 
 #define slider(...) \
   (widget_t*)&(slider_t){ \

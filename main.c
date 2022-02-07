@@ -24,92 +24,109 @@ void draw(AppContext *app, State *state) {
     }
   }
 
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {0,0},
+      .max = {200,200},
+    },
+    rect(.color = nvgRGB(255,255,255))
+  );
+
   /* Print btncount */
   char btn_count_str[40];
   sprintf(btn_count_str, "Button has been clicked: %d times", state->fontSize);
   widget_t *label = text(
-    .widget.position = {
-      .x = 200,
-      .y = 200,
-    },
     .font = &state->fontNormal,
     .size = 10,
     .content = btn_count_str,
   );
 
-  point_t label_size = widget_getsize(app, label);
+  point_t label_size = widget_getsize(app, CONSTRAINT_NONE, label);
 
-  widget_draw(app, rect(
-    .widget.position = {
-      .x = 200,
-      .y = 200,
-    },
-    .color = nvgRGB(255,255,255),
-    .w = label_size.x,
-    .h = label_size.y,
-  ));
+  bbox_t label_bounds = bbox_from_dims((point_t){200, 200}, label_size.x, label_size.y);
+  widget_draw(
+    app,
+    label_bounds,
+    rect(.color = nvgRGB(255,255,255))
+  );
 
-  widget_draw(app, label);
+  widget_draw(app, label_bounds, label);
 
   bool increase_clicked = false;
-  widget_draw(app, button(
-    .widget.position = {
-      .x = 20,
-      .y = 50,
+  
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {50, 50},
+      .max = {50, 50},
     },
-    .result           = &increase_clicked,
-    .label            = "Increase",
-    .label_font       = &state->fontNormal,
-    .label_font_size  = 14,
-    .label_color      = nvgRGBA(0, 0, 0, 255),
-    .background       = nvgRGBA(170, 170, 170, 255),
-    .background_hover = nvgRGBA(190, 190, 190, 255),
-    .background_down  = nvgRGBA(150, 150, 150, 255),
-  ));
+    button(
+      .result           = &increase_clicked,
+      .label            = "Increase",
+      .label_font       = &state->fontNormal,
+      .label_font_size  = 14,
+      .label_color      = nvgRGBA(0, 0, 0, 255),
+      .background       = nvgRGBA(170, 170, 170, 255),
+      .background_hover = nvgRGBA(190, 190, 190, 255),
+      .background_down  = nvgRGBA(150, 150, 150, 255),
+    )
+  );
   if (increase_clicked) {
     state->fontSize += 5;
   }
 
   bool decrease_clicked = false;
-  widget_draw(app, button(
-    .widget.position = {
-      .x = 200,
-      .y = 50,
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {200, 50},
+      .max = {200, 50},
     },
-    .result           = &decrease_clicked,
-    .label            = "Decrease",
-    .label_font       = &state->fontNormal,
-    .label_font_size  = 14,
-    .label_color      = nvgRGBA(0, 0, 0, 255),
-    .background       = nvgRGBA(170, 170, 170, 255),
-    .background_hover = nvgRGBA(190, 190, 190, 255),
-    .background_down  = nvgRGBA(150, 150, 150, 255),
-  ));
+    button(
+      .result           = &decrease_clicked,
+      .label            = "Decrease",
+      .label_font       = &state->fontNormal,
+      .label_font_size  = 14,
+      .label_color      = nvgRGBA(0, 0, 0, 255),
+      .background       = nvgRGBA(170, 170, 170, 255),
+      .background_hover = nvgRGBA(190, 190, 190, 255),
+      .background_down  = nvgRGBA(150, 150, 150, 255),
+    )
+  );
   if (decrease_clicked) {
     state->fontSize -= 5;
   }
 
   static int slider_value = 50;
 
-  widget_draw(app, slider(
-    .widget.position.x = 300,
-    .widget.position.y = 270,
-    .font = &state->fontNormal,
-    .min = 0,
-    .max = 100,
-    .step = 1,
-    .value = &slider_value,
-  ));
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {300, 270},
+      .max = {300, 270},
+    },
+    slider(
+      .font = &state->fontNormal,
+      .min = 0,
+      .max = 100,
+      .step = 1,
+      .value = &slider_value,
+    )
+  );
 
   char minlabel[10];
   char maxlabel[10];
   sprintf(minlabel, "%d", 5);
   sprintf(maxlabel, "%d", 100);
 
-  widget_draw(app,
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {300, 300},
+      .max = {600, 400},
+    },
     row(
-      .widget.position.x = 300,
-      .widget.position.y = 300,
       .item_count = 3,
       .items = (widget_t*[]){
         text(
@@ -130,25 +147,20 @@ void draw(AppContext *app, State *state) {
           .content = maxlabel,
         ),
       }
-  ));
+    )
+  );
 
   widget_t *myrow = row(
-    .widget.position = {500, 500},
     .item_count = 3,
     .items = (widget_t*[]){
       rect(
         .color = nvgRGB(0,255,255),
-        .w = 100,
-        .h = 100,
       ),
       circle(
         .color = nvgRGB(255,255,0),
-        .radius = 50,
       ),
       rect(
         .color = nvgRGB(255,0,255),
-        .w = 100,
-        .h = 100,
       ),
     },
     .spacing = slider_value,
@@ -156,17 +168,27 @@ void draw(AppContext *app, State *state) {
 
   /* Print slider_value */
   sprintf(btn_count_str, "Slider value: %d", slider_value);
-  widget_draw(app, text(
-    .widget.position = {
-      .x = 300,
-      .y = 250,
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {300, 250},
+      .max = {300, 250},
     },
-    .font = &state->fontNormal,
-    .size = 10,
-    .content = btn_count_str,
-  ));
+    text(
+      .font = &state->fontNormal,
+      .size = 10,
+      .content = btn_count_str,
+    )
+  );
 
-  widget_draw(app, myrow);
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {500, 500},
+      .max = {900, 600},
+    },
+    myrow
+  );
 
   nvgBeginPath(app->vg);
   nvgRect(app->vg, 200, 100, state->fontSize, state->fontSize);
