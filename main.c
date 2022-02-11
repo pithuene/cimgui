@@ -166,6 +166,21 @@ void draw(AppContext *app, State *state) {
     .spacing = slider_value,
   );
 
+  widget_t *mystack = stack(
+    .item_count = 2,
+    .items = (widget_t*[]){
+      rect(
+        .color = nvgRGB(0,255,255),
+      ),
+      center(
+        .child = circle(
+          .color = nvgRGB(255,255,0),
+        ),
+      ),
+    },
+    .spacing = slider_value,
+  );
+
   /* Print slider_value */
   sprintf(btn_count_str, "Slider value: %d", slider_value);
   widget_draw(
@@ -188,6 +203,15 @@ void draw(AppContext *app, State *state) {
       .max = {900, 600},
     },
     myrow
+  );
+
+  widget_draw(
+    app,
+    (bbox_t){
+      .min = {800, 800},
+      .max = {1200, 900},
+    },
+    mystack
   );
 
   nvgBeginPath(app->vg);

@@ -101,6 +101,23 @@ typedef struct {
   float spacing;
   int item_count;
   widget_t **items;
+} stack_t;
+
+point_t stack_draw(AppContext *app, bbox_t constraints, stack_t *conf);
+point_t stack_size(AppContext *app, bbox_t constraints, stack_t *conf);
+
+#define stack(...) \
+  (widget_t*)&(stack_t){ \
+    .widget.draw = (WidgetDraw) stack_draw, \
+    .widget.size = (WidgetSize) stack_size, \
+    __VA_ARGS__ \
+  }
+
+typedef struct {
+  widget_t widget;
+  float spacing;
+  int item_count;
+  widget_t **items;
 } row_t;
 
 point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf);
