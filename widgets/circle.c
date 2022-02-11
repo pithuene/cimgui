@@ -11,7 +11,7 @@ point_t circle_draw(AppContext *app, bbox_t constraints, circle_t *conf) {
   // Diameter is the minimum of width and height
   float diameter = bbox_width(constraints);
   if (bbox_height(constraints) < diameter)
-    diameter = bbox_width(constraints);
+    diameter = bbox_height(constraints);
 
   float radius = diameter / 2.0;
 
@@ -34,7 +34,7 @@ point_t circle_size(AppContext *app, bbox_t constraints, circle_t *conf) {
   // Diameter is the minimum of width and height
   float diameter = bbox_width(constraints);
   if (bbox_height(constraints) < diameter)
-    diameter = bbox_width(constraints);
+    diameter = bbox_height(constraints);
 
   return (point_t){
     .x = diameter,
