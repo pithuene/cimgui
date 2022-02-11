@@ -7,7 +7,7 @@
 #include "../font/font.h"
 
 // Draw a widget into some constraints given as a bounding box.
-// The widget must be drawn into the upper left corner of the contstraints.
+// The widget must be drawn into the upper left corner of the constraints.
 // Returns the actual size of the drawn widget.
 typedef point_t(*WidgetDraw)(AppContext *, bbox_t, void *);
 // Calculate the size of a widget without actually drawing it.
@@ -20,16 +20,16 @@ typedef struct {
 
 #define CONSTRAINT_NONE ((bbox_t){ .min = {0, 0}, .max = {999999, 999999}})
 
-point_t widget_draw(AppContext *context, bbox_t contstraints, widget_t *widget);
-point_t widget_getsize(AppContext *context, bbox_t contstraints, widget_t *widget);
+point_t widget_draw(AppContext *context, bbox_t constraints, widget_t *widget);
+point_t widget_getsize(AppContext *context, bbox_t constraints, widget_t *widget);
 
 typedef struct {
   widget_t widget;
   NVGcolor color;
 } rect_t;
 
-point_t rect_draw(AppContext *app, bbox_t contstraints, rect_t *conf);
-point_t rect_size(AppContext *app, bbox_t contstraints, rect_t *conf);
+point_t rect_draw(AppContext *app, bbox_t constraints, rect_t *conf);
+point_t rect_size(AppContext *app, bbox_t constraints, rect_t *conf);
 
 #define rect(...) \
   (widget_t*)&(rect_t){ \
@@ -110,6 +110,21 @@ point_t row_size(AppContext *app, bbox_t constraints, row_t *conf);
   (widget_t*)&(row_t){ \
     .widget.draw = (WidgetDraw) row_draw, \
     .widget.size = (WidgetSize) row_size, \
+    __VA_ARGS__ \
+  }
+
+typedef struct {
+  widget_t widget;
+  widget_t *child;
+} center_t;
+
+point_t center_draw(AppContext *app, bbox_t constraints,center_t  *conf);
+point_t center_size(AppContext *app, bbox_t constraints, center_t *conf);
+
+#define center(...) \
+  (widget_t*)&(center_t){ \
+    .widget.draw = (WidgetDraw) center_draw, \
+    .widget.size = (WidgetSize) center_size, \
     __VA_ARGS__ \
   }
 
