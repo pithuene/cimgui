@@ -20,23 +20,38 @@ void draw(AppContext *app, State *state) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
   widget_draw(app, window_bounds,
     elem_row(
-      .item_count = 3,
+      .spacing = 20,
+      .item_count = 5,
       .items = (element_t[]){
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
           .width  = {100, unit_px},
           .height = {30, unit_percent},
+          .x_align = align_start,
         },
         {
           .widget = rect(.color = nvgRGB(0, 200, 50)),
           .width  = {100, unit_px},
           .height = {100, unit_px},
-          .x_align = align_end,
+          .x_align = align_start,
         },
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
           .width  = {100, unit_px},
           .height = {30, unit_percent},
+          .x_align = align_center,
+        },
+        {
+          .widget = rect(.color = nvgRGB(0, 200, 50)),
+          .width  = {100, unit_px},
+          .height = {100, unit_px},
+          .x_align = align_start,
+        },
+        {
+          .widget = rect(.color = nvgRGB(200, 100, 50)),
+          .width  = {100, unit_px},
+          .height = {30, unit_percent},
+          .x_align = align_end,
         },
       }
     )
