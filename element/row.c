@@ -17,10 +17,17 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
     child_sizes[i] = widget_getsize(app, (bbox_t){.max = child_target_sizes[i]}, conf->items[i].widget);
 
     total_widget_width += child_sizes[i].x;
-    if (i <= conf->item_count - 1) total_widget_width += conf->spacing;
+    if (i < conf->item_count - 1) total_widget_width += conf->spacing;
   }
   double total_width = total_widget_width;
-  if (total_width < bbox_width(constraints)) total_width = bbox_width(constraints);
+  // Is the row wider than its constraints.
+  // If so, there are no gaps.
+  bool overflow = true;
+  if (total_width < bbox_width(constraints)) {
+    total_width = bbox_width(constraints);
+    overflow = false;
+  }
+  if (overflow);
 
   // Elements are layed out left to right.
   // As soon as an element has "higher" alignment (start -> center -> end),
