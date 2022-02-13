@@ -26,11 +26,19 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
     if (i < conf->item_count - 1) total_widget_width += conf->spacing;
     if (current_alignment == align_center)
       center_widget_width += child_sizes[i].x + conf->spacing;
+
+    if (child_sizes[i].y > max_height) max_height = child_sizes[i].y;
   }
+
+  // If constraints height is greater than the talles child, the row fills that height
+  if (bbox_height(constraints) > max_height) max_height = bbox_height(constraints);
+
+  // If there are no centered children, set centered widget size to zero
   if (center_widget_width < 0) center_widget_width = 0;
-  double total_width = total_widget_width;
+
   // Is the row wider than its constraints.
   // If so, there are no gaps.
+  double total_width = total_widget_width;
   if (total_width < bbox_width(constraints)) {
     total_width = bbox_width(constraints);
   }
@@ -46,7 +54,7 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
     if (conf->items[i].x_align > current_alignment) {
       current_alignment = conf->items[i].x_align;
       if (current_alignment == align_center) {
-        double center_start = (total_width / 2) - (center_widget_width / 2);
+        double center_start = (total_width - center_widget_width) / 2;
         if (current_width < center_start) {
           current_width = center_start;
         }
@@ -58,8 +66,13 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
 
     point_t topleft = {
       .x = constraints.min.x + current_width,
-      .y = constraints.min.y,
+      .y = constraints.min.y, // align_start
     };
+    if (conf->items[i].y_align == align_center) {
+      topleft.y = (max_height - child_sizes[i].y) / 2;
+    } else if (conf->items[i].y_align == align_end) {
+      topleft.y = max_height - child_sizes[i].y;
+    }
     point_t bottomright = point_add(topleft, child_target_sizes[i]);
     bbox_t child_constraints = {.min = topleft, .max = bottomright};
 

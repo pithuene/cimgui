@@ -26,7 +26,7 @@ void draw(AppContext *app, State *state) {
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
           .width  = {100, unit_px},
-          .height = {30, unit_percent},
+          .height = {100, unit_px},
           .x_align = align_start,
         },
         {
@@ -34,12 +34,14 @@ void draw(AppContext *app, State *state) {
           .width  = {100, unit_px},
           .height = {100, unit_px},
           .x_align = align_start,
+          .y_align = align_end,
         },
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
           .width  = {100, unit_px},
-          .height = {30, unit_percent},
+          .height = {100, unit_px},
           .x_align = align_center,
+          .y_align = align_center,
         },
         {
           .widget = rect(.color = nvgRGB(0, 200, 50)),
@@ -50,7 +52,7 @@ void draw(AppContext *app, State *state) {
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
           .width  = {100, unit_px},
-          .height = {30, unit_percent},
+          .height = {100, unit_px},
           .x_align = align_end,
         },
       }
