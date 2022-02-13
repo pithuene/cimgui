@@ -12,6 +12,7 @@ clean:
 	make -C events clean
 	make -C font clean
 	make -C widgets clean
+	make -C element clean
 	rm -f nanovg.o
 	rm -f main
 
@@ -30,8 +31,11 @@ events/events.a: force_look
 widgets/widgets.a: force_look
 	$(MAKE) -C widgets PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a widgets/widgets.a
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c events/events.a font/font.a widgets/widgets.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
+element/element.a: force_look
+	$(MAKE) -C element PARENT_CFLAGS="$(CFLAGS)"
+
+main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a widgets/widgets.a
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c events/events.a font/font.a element/element.a widgets/widgets.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
 
 
 force_look:

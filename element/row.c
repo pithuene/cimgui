@@ -8,26 +8,38 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
   // Non left-aligned childredn need to know the sizes of the children afterwards to determine their position.
   point_t child_target_sizes[conf->item_count];
   point_t child_sizes[conf->item_count];
+  double total_widget_width = 0;
   for (int i = 0; i < conf->item_count; i++) {
     child_target_sizes[i] = (point_t){
       .x = unit_length_in_px(conf->items[i].width, bbox_width(constraints)),
       .y = unit_length_in_px(conf->items[i].height, bbox_height(constraints)),
     };
     child_sizes[i] = widget_getsize(app, (bbox_t){.max = child_target_sizes[i]}, conf->items[i].widget);
-  }
 
+    total_widget_width += child_sizes[i].x;
+    if (i <= conf->item_count - 1) total_widget_width += conf->spacing;
+  }
+  double total_width = total_widget_width;
+  if (total_width < bbox_width(constraints)) total_width = bbox_width(constraints);
 
   // Elements are layed out left to right.
   // As soon as an element has "higher" alignment (start -> center -> end),
   // all following elements are pushed along to atleast that alignment.
   axis_alignment_t current_alignment = align_start;
+  double remaining_widget_width = total_widget_width;
 
   for (int i = 0; i < conf->item_count; i++) {
     // Alignment push along
-    if (conf->items[i].x_align > current_alignment) current_alignment = conf->items[i].x_align;
+    if (conf->items[i].x_align > current_alignment) {
+      current_alignment = conf->items[i].x_align;
+      if (current_alignment == align_end) {
+        current_width = total_width - remaining_widget_width;
+      }
+    }
 
     point_t childsize;
-    if (current_alignment == align_start) {
+
+    if (current_alignment == align_start || current_alignment == align_end) {
       point_t topleft = {
         .x = constraints.min.x + current_width,
         .y = constraints.min.y,
@@ -36,11 +48,15 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
       bbox_t child_constraints = {.min = topleft, .max = bottomright};
 
       childsize = widget_draw(app, child_constraints, conf->items[i].widget);
-      current_width += childsize.x;
-    } else if (current_alignment == align_end) {
-      
     }
-    if (i < conf->item_count - 1) current_width += conf->spacing;
+
+    if (i < conf->item_count - 1) {
+      current_width          += childsize.x;
+      remaining_widget_width -= childsize.x;
+
+      current_width          += conf->spacing;
+      remaining_widget_width -= conf->spacing;
+    }
     if (childsize.y > max_height) max_height = childsize.y;
   }
 
