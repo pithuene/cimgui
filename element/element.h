@@ -49,6 +49,34 @@ point_t elem_row_size(AppContext *app, bbox_t constraints, elem_row_t *conf);
     __VA_ARGS__ \
   }
 
+point_t elem_column_draw(AppContext *app, bbox_t constraints, elem_row_t *conf);
+point_t elem_column_size(AppContext *app, bbox_t constraints, elem_row_t *conf);
+
+#define elem_column(...) \
+  (widget_t*)&(elem_row_t){ \
+    .widget.draw = (WidgetDraw) elem_column_draw, \
+    .widget.size = (WidgetSize) elem_column_size, \
+    __VA_ARGS__ \
+  }
+
+// TODO: Rename to just row and remove the other row
+typedef struct {
+  widget_t widget;
+  float spacing;
+  int item_count;
+  element_t *items;
+} elem_line_t;
+
+point_t elem_line_draw(AppContext *app, bbox_t constraints, elem_line_t *conf);
+point_t elem_line_size(AppContext *app, bbox_t constraints, elem_line_t *conf);
+
+#define elem_line(...) \
+  (widget_t*)&(elem_line_t){ \
+    .widget.draw = (WidgetDraw) elem_line_draw, \
+    .widget.size = (WidgetSize) elem_line_size, \
+    __VA_ARGS__ \
+  }
+
 // Use an element as a widget
 // TODO: Do I even need this?
 /*typedef struct {
