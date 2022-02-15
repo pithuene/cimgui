@@ -115,23 +115,6 @@ point_t stack_size(AppContext *app, bbox_t constraints, stack_t *conf);
 
 typedef struct {
   widget_t widget;
-  float spacing;
-  int item_count;
-  widget_t **items;
-} row_t;
-
-point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf);
-point_t row_size(AppContext *app, bbox_t constraints, row_t *conf);
-
-#define row(...) \
-  (widget_t*)&(row_t){ \
-    .widget.draw = (WidgetDraw) row_draw, \
-    .widget.size = (WidgetSize) row_size, \
-    __VA_ARGS__ \
-  }
-
-typedef struct {
-  widget_t widget;
   widget_t *child;
 } center_t;
 

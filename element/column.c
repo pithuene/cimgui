@@ -1,7 +1,7 @@
 #include "element.h"
 #include <stdio.h>
 
-point_t elem_column_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
+point_t column_draw(AppContext *app, bbox_t constraints, row_t *conf) {
   float current_width  = 0;
   float max_height = 0;
 
@@ -93,7 +93,7 @@ point_t elem_column_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) 
   };
 }
 
-point_t elem_column_size(AppContext *app, bbox_t constraints, elem_row_t *conf) {
+point_t column_size(AppContext *app, bbox_t constraints, row_t *conf) {
   float total_width  = 0;
   float total_height = 0;
 

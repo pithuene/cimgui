@@ -19,7 +19,7 @@ typedef struct {
 void draw(AppContext *app, State *state) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
   widget_draw(app, window_bounds,
-    elem_column(
+    column(
       .spacing = 20,
       .item_count = 5,
       .items = (element_t[]){

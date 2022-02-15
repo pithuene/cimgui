@@ -1,7 +1,7 @@
 #include "element.h"
 #include <stdio.h>
 
-point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
+point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf) {
   float current_width  = 0;
   float max_height = 0;
 
@@ -85,7 +85,6 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
       current_width          += conf->spacing;
       remaining_widget_width -= conf->spacing;
     }
-    if (childsize.y > max_height) max_height = childsize.y;
   }
 
   return (point_t){
@@ -94,7 +93,7 @@ point_t elem_row_draw(AppContext *app, bbox_t constraints, elem_row_t *conf) {
   };
 }
 
-point_t elem_row_size(AppContext *app, bbox_t constraints, elem_row_t *conf) {
+point_t row_size(AppContext *app, bbox_t constraints, row_t *conf) {
   float total_width  = 0;
   float total_height = 0;
 
