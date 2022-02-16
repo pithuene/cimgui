@@ -17,21 +17,54 @@ typedef struct {
 
 void draw(AppContext *app, State *state) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
-  rect(app, window_bounds, &(rect_t){
-    .color = {255,0,0,255},
-  });
-  op_offset(&app->oplist, (point_t){100,100});
-  bool res = false;
-  button(app, window_bounds, &(button_t){
-    .background = {255,0,0,255},
-    .background_down = {0,255,0,255},
-    .background_hover = {0,0,255,255},
+  deferred_draw_t d = widget_draw_deferred(
+    app,
+    window_bounds,
+    &(widget_t){
+      .draw = (widget_draw_t) text,
+      .data = &(text_t){
+        .color = (color_t){0, 0, 0, 255},
+        .content = "Test",
+        .font = &state->fontNormal,
+        .size = 30,
+      }
+    }
+  );
+  rect(app, (bbox_t){{0}, d.dimensions}, &(rect_t){.color = {200,200,200,255}});
+  deferred_draw_execute(app, d);
+  op_offset(&app->oplist, (point_t){100, 100});
+
+  button_t button_template = {
+    .background = {200,200,200,255},
+    .background_down = {180,180,180,255},
+    .background_hover = {210, 210, 210, 255},
     .label_color = {0,0,0,255},
     .label_font = &state->fontNormal,
     .label_font_size = 20,
-    .label = "Hello World",
-    .result = &res,
-  });
+  };
+
+  bool res1 = false;
+  button_template.label = "Button 1";
+  button_template.result = &res1;
+  button(app, window_bounds, &button_template);
+
+  op_offset(&app->oplist, (point_t){150, 0});
+
+  bool res2 = false;
+  button_template.label = "Button 2";
+  button_template.result = &res2;
+  button(app, window_bounds, &button_template);
+  /*widget_draw(app, window_bounds, 
+    &(widget_t){
+      .draw = (widget_draw_t) text,
+      .data = &(text_t){
+        .color = (color_t){0, 0, 0, 255},
+        .content = "Test",
+        .font = &state->fontNormal,
+        .size = 30,
+      }
+    }
+  );*/
 }
 
 // Given a pattern, returns the path to a font file.

@@ -51,7 +51,7 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
     }
     case optype_text: {
       op_text_t *op = (op_text_t*) untyped_op;
-      nvgFontSize(state->vg, op->size);
+      nvgFontSize(state->vg, op->size / op->font->heightFactor);
       nvgFontFaceId(state->vg, op->font->handle);
 	    nvgTextAlign(state->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
       nvgText(state->vg,
@@ -59,6 +59,11 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
               state->offset.y - (op->size * op->font->heightOffset),
               op->string,
               op->end);
+      return;
+    }
+    case optype_area_mapping: {
+      op_area_mapping_t *op = (op_area_mapping_t*) untyped_op;
+      *op->result = bbox_from_dims(state->offset, op->source.x, op->source.y);
       return;
     }
   }
@@ -126,7 +131,7 @@ void op_text(oplist_t *oplist, float size, Font *font, const char *string, const
 }
 
 point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, const char *end) {
-  nvgFontSize(vg, size);
+  nvgFontSize(vg, size/font->heightFactor);
   nvgFontFaceId(vg, font->handle);
   nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   float bounds[4];
@@ -136,4 +141,15 @@ point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, 
     .x = bounds[2] - bounds[0],
     .y = size,
   };
+}
+
+// Calculate where a point is actually drawn in pixel space.
+// This is done by setting the information during the actual draw,
+// so data is always one frame behind and there is no data on the first draw.
+void op_area_mapping(oplist_t *oplist, point_t source, bbox_t *result) {
+  op_area_mapping_t *op = arenaalloc(oplist->arena, sizeof(op_area_mapping_t));
+  op->type = optype_area_mapping;
+  op->source = source;
+  op->result = result;
+  oplist_append(oplist, &op->type);
 }

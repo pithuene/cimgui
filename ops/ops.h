@@ -17,6 +17,7 @@ typedef enum {
   optype_rect,
   optype_circle,
   optype_text,
+  optype_area_mapping,
 } optype_t;
 
 typedef struct {
@@ -60,6 +61,12 @@ typedef struct {
   const char *end;
 } op_text_t;
 
+typedef struct {
+  optype_t type;
+  point_t  source;
+  bbox_t  *result;
+} op_area_mapping_t;
+
 typedef struct oplist_item_t {
   // Points to the operation struct.
   // First member is its type.
@@ -102,6 +109,7 @@ void op_fill(oplist_t *oplist);
 void op_rect(oplist_t *oplist, float width, float height);
 void op_circle(oplist_t *oplist, float radius);
 void op_text(oplist_t *oplist, float size, Font *font, const char *string, const char *end);
+void op_area_mapping(oplist_t *oplist, point_t source, bbox_t *result);
 
 point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, const char *end);
 

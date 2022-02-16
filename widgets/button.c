@@ -8,11 +8,12 @@ point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
 
   point_t label_size = text_bounds(app->vg, conf->label_font_size, conf->label_font, conf->label, NULL);
 
-  bbox_t button_bounds = bbox_from_dims(
-      (point_t){constraints.min.x, constraints.min.y},
-      2*xPadding + label_size.x,
-      2*yPadding + label_size.y
-  );
+  static bbox_t button_bounds = {0};
+  op_area_mapping(&app->oplist, (point_t){
+    2*xPadding + label_size.x,
+    2*yPadding + label_size.y,
+  }, &button_bounds);
+
 
   bool hover = intersects_point_bbox(app->cursor, button_bounds);
 
