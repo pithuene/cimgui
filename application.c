@@ -171,15 +171,15 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 
     // Draw only if there are events to be handled or if the next frame is forced.
     if (forceNextFrameDraw || !eventqueue_isempty(&context->eventqueue)) {
+      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
+      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
+
       // Update and render
       glViewport(0, 0, fbWidth, fbHeight);
       // Background
       glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-      // TODO: Move this before glViewport to remove stutter on window resize?
-      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
-      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
 
       // Calculate pixel ration for hi-dpi devices.
       pxRatio = (float)fbWidth / (float)winWidth;
