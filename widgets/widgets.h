@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "../application.h"
+// TODO: Remove the dependency to nanovg anywhere but in the oplist.
 #include "../nanovg/src/nanovg.h"
 #include "../font/font.h"
 

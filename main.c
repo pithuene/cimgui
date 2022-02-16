@@ -19,36 +19,16 @@ typedef struct {
 void draw(AppContext *app, State *state) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
   widget_draw(app, window_bounds,
-    column(
+    row(
       .spacing = 20,
-      .item_count = 5,
+      .item_count = 2,
       .items = (element_t[]){
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),
-          .width  = {100, unit_px},
-          .height = {100, unit_px},
+          .width  = {15, unit_percent},
+          .height = {100, unit_percent},
           .x_align = align_start,
-        },
-        {
-          .widget = rect(.color = nvgRGB(0, 200, 50)),
-          .width  = {100, unit_px},
-          .height = {100, unit_px},
-          .x_align = align_center,
-          .y_align = align_start,
-        },
-        {
-          .widget = rect(.color = nvgRGB(200, 100, 50)),
-          .width  = {100, unit_px},
-          .height = {100, unit_px},
-          .x_align = align_center,
-          .y_align = align_start,
-        },
-        {
-          .widget = rect(.color = nvgRGB(0, 200, 50)),
-          .width  = {100, unit_px},
-          .height = {100, unit_px},
-          .x_align = align_end,
-          .y_align = align_center,
+          .y_align = align_end,
         },
         {
           .widget = rect(.color = nvgRGB(200, 100, 50)),

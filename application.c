@@ -36,7 +36,7 @@ static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action
   AppContext * context = glfwGetWindowUserPointer(glWindow);
   eventqueue_enqueue(&context->eventqueue, key_event(key, scancode, action, mods));
 
-  // TODO
+  // TODO: Add window close operation
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(glWindow, GL_TRUE);
 }
@@ -77,6 +77,12 @@ struct AppContext *application_create(void) {
   state->frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
 
   state->eventqueue = (EventQueue){
+    .arena = &state->frameArena,
+    .head = NULL,
+    .tail = NULL,
+  };
+
+  state->oplist = (oplist_t){
     .arena = &state->frameArena,
     .head = NULL,
     .tail = NULL,
@@ -197,8 +203,11 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         .pxRatio = pxRatio,
       };
 
-      // Call the draw function
+      // Call the draw function.
+      // Handles all events, executes the layout logic and populates the oplist
       (*draw)(context, data);
+
+      application_oplist_execute(context);
 
       nvgEndFrame(context->vg);
       glfwSwapBuffers(context->glWindow);
@@ -220,6 +229,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       }
 
       eventqueue_clear(&context->eventqueue);
+      oplist_clear(&context->oplist);
       arena_allocator_reset(&context->frameArena);
     }
 
@@ -257,4 +267,15 @@ void application_free(struct AppContext *state) {
 	nvgDeleteGL3(state->vg);
 	glfwTerminate();
   free(state);
+}
+
+// Execute all operations in an oplist
+void application_oplist_execute(AppContext *app) {
+  op_execution_state_t exec_state = {
+    .vg = app->vg,
+    .offset = {0,0},
+  };
+  for (oplist_item_t *item = app->oplist.head; item != NULL; item = item->next) {
+    op_execute(&exec_state, item->op);
+  }
 }

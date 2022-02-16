@@ -5,6 +5,7 @@
 #include "nanovg/src/nanovg.h"
 #include "utils/utils.h"
 #include "events/events.h"
+#include "ops/ops.h"
 #include "ds/mem/arenaalloc.h"
 
 // Stores whether a mousebutton is currently pressed down and in which
@@ -30,6 +31,7 @@ typedef struct AppContext {
   // Holds per frame data like events. Freed after every frame.
   arena_allocator_t frameArena;
   EventQueue eventqueue;
+  oplist_t oplist;
   WindowInfo window;
   point_t cursor;
   // Time since last draw. Useful for framerate independent speed.
@@ -38,6 +40,9 @@ typedef struct AppContext {
 } AppContext;
 
 typedef void(*AppLoopFunction)(AppContext *, void *);
+
+// Execute all operations in the application oplist
+void application_oplist_execute(AppContext *app);
 
 AppContext *application_create(void);
 void application_loop(
