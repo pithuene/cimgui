@@ -1,4 +1,4 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Werror 
+CFLAGS = -g -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Werror 
 
 .PHONY: all
 all: main

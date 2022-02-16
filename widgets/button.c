@@ -1,19 +1,12 @@
 #include "widgets.h"
 
-point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf) {
+point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
   bool result = false;
 
   float xPadding = 10;
   float yPadding = 10;
-  
-  widget_t *label = text(
-    .font = conf->label_font,
-    .size = conf->label_font_size,
-    .content = conf->label,
-    .color = conf->label_color,
-  );
 
-  point_t label_size = widget_getsize(app, constraints, label);
+  point_t label_size = text_bounds(app->vg, conf->label_font_size, conf->label_font, conf->label, NULL);
 
   bbox_t button_bounds = bbox_from_dims(
       (point_t){constraints.min.x, constraints.min.y},
@@ -23,7 +16,7 @@ point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf) {
 
   bool hover = intersects_point_bbox(app->cursor, button_bounds);
 
-  NVGcolor background = hover ? conf->background_hover : conf->background;
+  color_t background = hover ? conf->background_hover : conf->background;
 
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == InputMouseButtonPressEvent) {
@@ -45,31 +38,25 @@ point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf) {
     }
   }
 
-  widget_draw(app, button_bounds, rect(
+  rect(app, button_bounds, &(rect_t){
     .color = background,
-  ));
+  });
 
-  widget_draw(app, bbox_move(constraints, (point_t){xPadding, yPadding}), label);
+  op_offset(&app->oplist, (point_t){
+    .x = xPadding,
+    .y = yPadding,
+  });
+
+  op_begin_path(&app->oplist);
+  op_fill_color(&app->oplist, conf->label_color);
+  op_text(&app->oplist, conf->label_font_size, conf->label_font, conf->label, NULL);
+
+  op_offset(&app->oplist, (point_t){
+    .x = -xPadding,
+    .y = -yPadding,
+  });
 
   *conf->result = result;
 
   return bbox_dims(button_bounds);
 }
-
-point_t button_size(AppContext *app, bbox_t constraints, button_t *conf) {
-  float xPadding = 10;
-  float yPadding = 10;
-
-  widget_t *label = text(
-    .font = conf->label_font,
-    .size = conf->label_font_size,
-    .content = conf->label,
-  );
-  point_t label_size = widget_getsize(app, constraints, label);
-
-  return (point_t){
-    .x = 2*xPadding + label_size.x,
-    .y = 2*yPadding + label_size.y,
-  };
-}
-

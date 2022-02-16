@@ -177,6 +177,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
+      // TODO: Move this before glViewport to remove stutter on window resize?
       glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
       glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
 
@@ -207,6 +208,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       // Handles all events, executes the layout logic and populates the oplist
       (*draw)(context, data);
 
+      //oplist_print(&context->oplist);
       application_oplist_execute(context);
 
       nvgEndFrame(context->vg);
@@ -278,4 +280,14 @@ void application_oplist_execute(AppContext *app) {
   for (oplist_item_t *item = app->oplist.head; item != NULL; item = item->next) {
     op_execute(&exec_state, item->op);
   }
+}
+
+Font application_register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset) {
+  Font font = {
+    .name = name,
+    .heightFactor = heightFactor,
+    .heightOffset = heightOffset,
+  };
+	font.handle = nvgCreateFont(context->vg, name, filename);
+  return font;
 }

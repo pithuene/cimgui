@@ -1,45 +1,13 @@
 #include "widgets.h"
 
-point_t text_draw(AppContext *app, bbox_t constraints, text_t *conf) {
-  nvgBeginPath(app->vg);
-	nvgFillColor(app->vg, conf->color);
-	nvgFontSize(app->vg, (float)conf->size/conf->font->heightFactor);
-	nvgFontFace(app->vg, conf->font->name);
-	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  float bounds[4];
-	nvgTextBounds(app->vg,
-      constraints.min.x,
-      constraints.min.y - (conf->size * conf->font->heightOffset),
-      conf->content,
-      NULL,
-      bounds);
+point_t text(AppContext *app, bbox_t constraints, text_t *conf) {
+  op_begin_path(&app->oplist);
+  op_fill_color(&app->oplist, conf->color);
 
-	nvgText(app->vg,
-      constraints.min.x,
-      constraints.min.y - (conf->size * conf->font->heightOffset),
-      conf->content,
-      NULL);
+  point_t bounds = text_bounds(app->vg, conf->size, conf->font, conf->content, NULL);
 
-  return (point_t){
-    .x = bounds[2] - bounds[0],
-    .y = conf->size,
-  };
+  op_text(&app->oplist, conf->size, conf->font, conf->content, NULL);
+
+  return bounds;
 }
 
-point_t text_size(AppContext *app, bbox_t constraints, text_t *conf) {
-	nvgFontSize(app->vg, (float)conf->size/conf->font->heightFactor);
-	nvgFontFace(app->vg, conf->font->name);
-	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  float bounds[4];
-	nvgTextBounds(app->vg,
-      constraints.min.x,
-      constraints.min.y - (conf->size * conf->font->heightOffset),
-      conf->content,
-      NULL,
-      bounds);
-
-  return (point_t){
-    .x = bounds[2] - bounds[0],
-    .y = conf->size,
-  };
-}

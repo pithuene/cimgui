@@ -1,5 +1,4 @@
 #include "application.h"
-#include "nanovg/src/nanovg.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -18,28 +17,21 @@ typedef struct {
 
 void draw(AppContext *app, State *state) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
-  widget_draw(app, window_bounds,
-    row(
-      .spacing = 20,
-      .item_count = 2,
-      .items = (element_t[]){
-        {
-          .widget = rect(.color = nvgRGB(200, 100, 50)),
-          .width  = {15, unit_percent},
-          .height = {100, unit_percent},
-          .x_align = align_start,
-          .y_align = align_end,
-        },
-        {
-          .widget = rect(.color = nvgRGB(200, 100, 50)),
-          .width  = {100, unit_px},
-          .height = {100, unit_px},
-          .x_align = align_start,
-          .y_align = align_end,
-        },
-      }
-    )
-  );
+  rect(app, window_bounds, &(rect_t){
+    .color = {255,0,0,255},
+  });
+  op_offset(&app->oplist, (point_t){100,100});
+  bool res = false;
+  button(app, window_bounds, &(button_t){
+    .background = {255,0,0,255},
+    .background_down = {0,255,0,255},
+    .background_hover = {0,0,255,255},
+    .label_color = {0,0,0,255},
+    .label_font = &state->fontNormal,
+    .label_font_size = 20,
+    .label = "Hello World",
+    .result = &res,
+  });
 }
 
 // Given a pattern, returns the path to a font file.
@@ -59,7 +51,7 @@ Font load_font(AppContext *app, char * input_pattern, float heightFactor, float 
     FcChar8 *file = NULL;
     if (FcPatternGetString(font_pattern, FC_FILE, 0, &file) == FcResultMatch) {
       fontFile = (char*) file;
-      font = register_font(app, input_pattern, fontFile, heightFactor, heightOffset);
+      font = application_register_font(app, input_pattern, fontFile, heightFactor, heightOffset);
     } else {
       printf("No font matches!\n");
       exit(1);

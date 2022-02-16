@@ -3,102 +3,70 @@
 
 #include <stdbool.h>
 #include "../application.h"
-// TODO: Remove the dependency to nanovg anywhere but in the oplist.
-#include "../nanovg/src/nanovg.h"
 #include "../font/font.h"
 
-// Draw a widget into some constraints given as a bounding box.
-// The widget must be drawn into the upper left corner of the constraints.
-// Returns the actual size of the drawn widget.
-typedef point_t(*WidgetDraw)(AppContext *, bbox_t, void *);
-// Calculate the size of a widget without actually drawing it.
-typedef point_t(*WidgetSize)(AppContext *, bbox_t, void *);
+typedef point_t(*widget_draw_t)(AppContext *, bbox_t, void *);
 
 typedef struct {
-  WidgetDraw draw;
-  WidgetSize size;
+  widget_draw_t draw;
+  void         *data;
 } widget_t;
 
 #define CONSTRAINT_NONE ((bbox_t){ .min = {0, 0}, .max = {999999, 999999}})
 
 point_t widget_draw(AppContext *context, bbox_t constraints, widget_t *widget);
-point_t widget_getsize(AppContext *context, bbox_t constraints, widget_t *widget);
 
 typedef struct {
-  widget_t widget;
-  NVGcolor color;
+  oplist_t ops;
+  point_t  dimensions;
+} deferred_draw_t;
+
+// Draw widget into seperate oplist.
+deferred_draw_t widget_draw_deferred(AppContext *context, bbox_t constraints, widget_t *widget);
+
+// Append the operations from a deferred draw to the appliaction oplist.
+// Can be called multiple times to perform the same draw at multiple positions.
+point_t deferred_draw_execute(AppContext *app, deferred_draw_t draw);
+
+typedef struct {
+  color_t color;
 } rect_t;
 
-point_t rect_draw(AppContext *app, bbox_t constraints, rect_t *conf);
-point_t rect_size(AppContext *app, bbox_t constraints, rect_t *conf);
-
-#define rect(...) \
-  (widget_t*)&(rect_t){ \
-    .widget.draw = (WidgetDraw) rect_draw, \
-    .widget.size = (WidgetSize) rect_size, \
-    __VA_ARGS__ \
-  }
+point_t rect(AppContext *app, bbox_t constraints, rect_t *conf);
 
 typedef struct {
-  widget_t widget;
-  NVGcolor color;
+  color_t color;
 } circle_t;
 
-point_t circle_draw(AppContext *app, bbox_t constraints, circle_t *conf);
-point_t circle_size(AppContext *app, bbox_t constraints, circle_t *conf);
+point_t circle(AppContext *app, bbox_t constraints, circle_t *conf);
+
 // Helper to generate bbox for a circle
 bbox_t circle_center_at(point_t center, float radius);
 
-#define circle(...) \
-  (widget_t*)&(circle_t){ \
-    .widget.draw = (WidgetDraw) circle_draw, \
-    .widget.size = (WidgetSize) circle_size, \
-    __VA_ARGS__ \
-  }
-
 typedef struct {
-  widget_t widget;
   Font       *font;
   float       size;
   const char *content;
-  NVGcolor    color;
+  color_t     color;
 } text_t;
 
-point_t text_draw(AppContext *app, bbox_t constraints, text_t *conf);
-point_t text_size(AppContext *app, bbox_t constraints, text_t *conf);
-
-#define text(...) \
-  (widget_t*)&(text_t){ \
-    .widget.draw = (WidgetDraw) text_draw, \
-    .widget.size = (WidgetSize) text_size, \
-    .color = nvgRGB(0,0,0), \
-    __VA_ARGS__ \
-  }
+point_t text(AppContext *app, bbox_t constraints, text_t *conf);
 
 typedef struct {
-  widget_t widget;
   bool *result;
   const char *label;
   Font *label_font;
   float label_font_size;
-  NVGcolor label_color;
-  NVGcolor background;
-  NVGcolor background_hover;
-  NVGcolor background_down;
+  color_t label_color;
+  color_t background;
+  color_t background_hover;
+  color_t background_down;
 } button_t;
 
-point_t button_draw(AppContext *app, bbox_t constraints, button_t *conf);
-point_t button_size(AppContext *app, bbox_t constraints, button_t *conf);
+point_t button(AppContext *app, bbox_t constraints, button_t *conf);
 
-#define button(...) \
-  (widget_t*)&(button_t){ \
-    .widget.draw = (WidgetDraw) button_draw, \
-    .widget.size = (WidgetSize) button_size, \
-    __VA_ARGS__ \
-  }
-
+/*
 typedef struct {
-  widget_t widget;
   float spacing;
   int item_count;
   widget_t **items;
@@ -127,10 +95,9 @@ point_t center_size(AppContext *app, bbox_t constraints, center_t *conf);
     .widget.draw = (WidgetDraw) center_draw, \
     .widget.size = (WidgetSize) center_size, \
     __VA_ARGS__ \
-  }
+  }*/
 
 typedef struct {
-  widget_t widget;
   Font    *font;
   int     *value;
   int      min;
@@ -138,17 +105,6 @@ typedef struct {
   int      step;
 } slider_t;
 
-point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf);
-point_t slider_size(AppContext *app, bbox_t constraints, slider_t *conf);
-
-#define slider(...) \
-  (widget_t*)&(slider_t){ \
-    .widget.draw = (WidgetDraw) slider_draw, \
-    .widget.size = (WidgetSize) slider_size, \
-    .min = 0, \
-    .min = 100, \
-    .step = 1, \
-    __VA_ARGS__ \
-  }
+point_t slider(AppContext *app, bbox_t constraints, slider_t *conf);
 
 #endif

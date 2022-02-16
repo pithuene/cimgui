@@ -1,4 +1,5 @@
 #include "ops.h"
+#include <stdio.h>
 
 oplist_t oplist_create(oplist_t *parent) {
   return (oplist_t){
@@ -9,7 +10,7 @@ oplist_t oplist_create(oplist_t *parent) {
 }
 
 void oplist_append(oplist_t *oplist, optype_t *op) {
-  oplist_item_t *item = arenaalloc(oplist->arena, sizeof(oplist_item_t*));
+  oplist_item_t *item = arenaalloc(oplist->arena, sizeof(oplist_item_t));
   *item = (oplist_item_t){
     .op = op,
     .next = NULL,
@@ -39,23 +40,10 @@ void oplist_clear(oplist_t *oplist) {
   oplist->tail = NULL;
 }
 
-void op_execute(op_execution_state_t *state, optype_t *op) {
-  switch(*op) {
-    case optype_nop: {
-      return;
-    }
-    case optype_rect: {
-      op_rect_t *op = op;
-      nvgRect(state->vg,
-              state->offset.x,
-              state->offset.y,
-              op->width,
-              op->height);
-      return;
-    }
+void oplist_print(oplist_t *oplist) {
+  int i = 0;
+  for (oplist_item_t *item = oplist->head; item != NULL; item = item->next) {
+    printf("%d: Optype %d\n", i, *item->op);
+    i++;
   }
-  // TODO: Handle this more gracefully
-  // UNKNOWN OP TYPE!
-  exit(1);
 }
-

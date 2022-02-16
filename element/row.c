@@ -1,14 +1,14 @@
 #include "element.h"
 #include <stdio.h>
 
-point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf) {
+point_t row(AppContext *app, bbox_t constraints, row_t *conf) {
   float current_width  = 0;
   float max_height = 0;
 
   // Calculate the child sizes.
   // Non left-aligned childredn need to know the sizes of the children afterwards to determine their position.
   point_t child_target_sizes[conf->item_count];
-  point_t child_sizes[conf->item_count];
+  deferred_draw_t child_draws[conf->item_count];
   double total_widget_width = 0;
   double center_widget_width = -conf->spacing;
   axis_alignment_t current_alignment = align_start;
@@ -20,14 +20,14 @@ point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf) {
       .x = unit_length_in_px(conf->items[i].width, bbox_width(constraints)),
       .y = unit_length_in_px(conf->items[i].height, bbox_height(constraints)),
     };
-    child_sizes[i] = widget_getsize(app, (bbox_t){.max = child_target_sizes[i]}, conf->items[i].widget);
+    child_draws[i] = widget_draw_deferred(app, (bbox_t){.max = child_target_sizes[i]}, conf->items[i].widget);
 
-    total_widget_width += child_sizes[i].x;
+    total_widget_width += child_draws[i].dimensions.x;
     if (i < conf->item_count - 1) total_widget_width += conf->spacing;
     if (current_alignment == align_center)
-      center_widget_width += child_sizes[i].x + conf->spacing;
+      center_widget_width += child_draws[i].dimensions.x + conf->spacing;
 
-    if (child_sizes[i].y > max_height) max_height = child_sizes[i].y;
+    if (child_draws[i].dimensions.y > max_height) max_height = child_draws[i].dimensions.y;
   }
 
   // If constraints height is greater than the talles child, the row fills that height
@@ -69,14 +69,14 @@ point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf) {
       .y = constraints.min.y, // align_start
     };
     if (conf->items[i].y_align == align_center) {
-      topleft.y = (max_height - child_sizes[i].y) / 2;
+      topleft.y = (max_height - child_draws[i].dimensions.y) / 2;
     } else if (conf->items[i].y_align == align_end) {
-      topleft.y = max_height - child_sizes[i].y;
+      topleft.y = max_height - child_draws[i].dimensions.y;
     }
-    point_t bottomright = point_add(topleft, child_target_sizes[i]);
-    bbox_t child_constraints = {.min = topleft, .max = bottomright};
 
-    point_t childsize = widget_draw(app, child_constraints, conf->items[i].widget);
+    op_offset(&app->oplist, topleft);
+    point_t childsize = deferred_draw_execute(app, child_draws[i]);
+    op_offset(&app->oplist, point_multiply(topleft, -1));
 
     if (i < conf->item_count - 1) {
       current_width          += childsize.x;
@@ -90,38 +90,6 @@ point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf) {
   return (point_t){
     .x = current_width,
     .y = max_height,
-  };
-}
-
-point_t row_size(AppContext *app, bbox_t constraints, row_t *conf) {
-  float total_width  = 0;
-  float total_height = 0;
-
-  for (int i = 0; i < conf->item_count; i++) {
-    point_t topleft = {
-      .x = constraints.min.x + total_width,
-      .y = constraints.min.y,
-    };
-    point_t target_child_size = {
-      .x = unit_length_in_px(conf->items[i].width, bbox_width(constraints)),
-      .y = unit_length_in_px(conf->items[i].height, bbox_height(constraints)),
-    };
-    point_t bottomright = point_add(topleft, target_child_size);
-    bbox_t child_constraints = {.min = topleft, .max = bottomright};
-
-    point_t childsize = widget_getsize(app, child_constraints, conf->items[i].widget);
-    total_width += childsize.x;
-    if (i < conf->item_count - 1) total_width += conf->spacing;
-    if (childsize.y > total_height) total_height = childsize.y;
-  }
-
-  // If the row is not entirely full (gaps), the width is still the full constraint width.
-  // If the row overflows (is wider than its constraints), that overflowing width is returned.
-  if (total_width < bbox_width(constraints)) total_width = bbox_width(constraints);
-
-  return (point_t){
-    .x = total_width,
-    .y = total_height,
   };
 }
 

@@ -52,4 +52,6 @@ void application_loop(
 );
 void application_free(AppContext *state);
 
+Font application_register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset);
+
 #endif

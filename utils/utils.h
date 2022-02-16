@@ -1,7 +1,15 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
+#include <stdint.h>
 #include <stdbool.h>
+
+typedef struct {
+  uint32_t r : 8;
+  uint32_t g : 8;
+  uint32_t b : 8;
+  uint32_t a : 8;
+} color_t;
 
 typedef struct {
   double x;
@@ -25,6 +33,7 @@ float bbox_width(bbox_t bbox);
 float bbox_height(bbox_t bbox);
 bbox_t bbox_move(bbox_t bbox, point_t vec);
 point_t point_add(point_t a, point_t b);
+point_t point_multiply(point_t point, double factor);
 void clamp_float(float *target, float min, float max);
 void clamp_int(int *target, int min, int max);
 
@@ -77,6 +86,13 @@ inline point_t point_add(point_t a, point_t b) {
   return (point_t){
     .x = a.x + b.x,
     .y = a.y + b.y,
+  };
+}
+
+inline point_t point_multiply(point_t point, double factor) {
+  return (point_t){
+    .x = point.x * factor,
+    .y = point.y * factor,
   };
 }
 

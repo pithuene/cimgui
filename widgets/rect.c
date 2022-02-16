@@ -1,20 +1,15 @@
 #include "widgets.h"
-#include <stdio.h>
 
-point_t rect_draw(AppContext *app, bbox_t constraints, rect_t *conf) {
-  nvgBeginPath(app->vg);
-  nvgRect(app->vg,
-      constraints.min.x,
-      constraints.min.y,
-      bbox_width(constraints),
-      bbox_height(constraints));
-  nvgFillColor(app->vg, conf->color);
-  nvgFill(app->vg);
+point_t rect(AppContext *app, bbox_t constraints, rect_t *conf) {
+  op_begin_path(&app->oplist);
+  op_rect(
+    &app->oplist,
+    bbox_width(constraints),
+    bbox_height(constraints)
+  );
+  op_fill_color(&app->oplist, conf->color);
+  op_fill(&app->oplist);
 
-  return bbox_dims(constraints);
-}
-
-point_t rect_size(AppContext *app, bbox_t constraints, rect_t *conf) {
   return bbox_dims(constraints);
 }
 

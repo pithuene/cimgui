@@ -3,11 +3,11 @@
 #include <math.h>
 #include <stdio.h>
 
-point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf) {
-  NVGcolor track_color = nvgRGB(66, 66, 66);
-  NVGcolor track_value_color = nvgRGB(150, 150, 150);
-  NVGcolor track_value_color_active = nvgRGB(20, 192, 80);
-  NVGcolor slider_color = nvgRGB(192, 192, 192);
+point_t slider(AppContext *app, bbox_t constraints, slider_t *conf) {
+  color_t track_color = {66, 66, 66, 255};
+  color_t track_value_color = {150, 150, 150, 255};
+  color_t track_value_color_active = {20, 192, 80, 255};
+  color_t slider_color = {192, 192, 192, 255};
   float slider_radius = 8;
   float slider_middle_radius = 3;
   float track_width = 200;
@@ -73,38 +73,37 @@ point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf) {
   slider_center.x += track_value_width;
 
   // Track
-  widget_draw(app,
+  rect(
+    app,
     (bbox_t){
       .min = track_position,
       .max = point_add(track_position, (point_t){track_width, track_line_width}),
     },
-    rect(
-      .color = track_color,
-    )
+    &(rect_t){.color = track_color}
   );
 
   // Active track
-  widget_draw(app,
+  rect(
+    app,
     (bbox_t){
       .min = track_position,
       .max = point_add(track_position, (point_t){track_value_width, track_line_width}),
     },
-    rect(
-      .color = is_active ? track_value_color_active : track_value_color,
-    )
+    &(rect_t){.color = is_active ? track_value_color_active : track_value_color}
   );
 
   // Draw slider
   if (is_active) {
-    widget_draw(
+    // TODO: You need offset here
+    circle(
       app,
       circle_center_at(slider_center, slider_radius),
-      circle(.color = slider_color)
+      &(circle_t){.color = slider_color}
     );
-    widget_draw(
+    circle(
       app,
       circle_center_at(slider_center, slider_middle_radius),
-      circle(.color = is_being_dragged ? track_value_color_active : track_color)
+      &(circle_t){.color = is_being_dragged ? track_value_color_active : track_color}
     );
 
     // Draw value label
@@ -112,14 +111,15 @@ point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf) {
     sprintf(valuelabel, "%d", *conf->value);
     bbox_t value_label_position = circle_center_at(slider_center, slider_radius);
     value_label_position = bbox_move(value_label_position, (point_t){.y = 25});
-    widget_draw(
+    text(
       app,
       value_label_position,
-      text(
+      &(text_t){
         .font = conf->font,
         .size = 10,
         .content = valuelabel,
-      )
+        .color = {0,0,0,255},
+      }
     );
   }
 
@@ -128,12 +128,3 @@ point_t slider_draw(AppContext *app, bbox_t constraints, slider_t *conf) {
     .y = 2*slider_radius,
   };
 }
-
-point_t slider_size(AppContext *app, bbox_t constraints, slider_t *conf) {
-  float slider_radius = 10;
-  return (point_t){
-    .x = 200,
-    .y = 2*slider_radius,
-  };
-}
-

@@ -32,30 +32,13 @@ typedef struct {
 } element_t;
 
 typedef struct {
-  widget_t widget;
   float spacing;
   int item_count;
   element_t *items;
 } row_t;
 
-point_t row_draw(AppContext *app, bbox_t constraints, row_t *conf);
-point_t row_size(AppContext *app, bbox_t constraints, row_t *conf);
+point_t row(AppContext *app, bbox_t constraints, row_t *conf);
+point_t column(AppContext *app, bbox_t constraints, row_t *conf);
 
-#define row(...) \
-  (widget_t*)&(row_t){ \
-    .widget.draw = (WidgetDraw) row_draw, \
-    .widget.size = (WidgetSize) row_size, \
-    __VA_ARGS__ \
-  }
-
-point_t column_draw(AppContext *app, bbox_t constraints, row_t *conf);
-point_t column_size(AppContext *app, bbox_t constraints, row_t *conf);
-
-#define column(...) \
-  (widget_t*)&(row_t){ \
-    .widget.draw = (WidgetDraw) column_draw, \
-    .widget.size = (WidgetSize) column_size, \
-    __VA_ARGS__ \
-  }
 
 #endif
