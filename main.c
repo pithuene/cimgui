@@ -7,6 +7,7 @@
 #include "widgets/widgets.h"
 #include "element/element.h"
 #include "font/font.h"
+#include "checktag/checktag.h"
 
 typedef struct {
   Font fontNormal;
@@ -16,7 +17,10 @@ typedef struct {
   button_t btns[3];
 } State;
 
+
 void draw(AppContext *app, State *state) {
+  check_tag(&state->fontSize);
+
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
   deferred_draw_t d = widget_draw_deferred(
     app,

@@ -13,6 +13,7 @@
 #include <unistd.h>
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
+#include "checktag/checktag.h"
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -221,6 +222,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         forceNextFrameDraw = false;
       }
 
+      set_draw_stack_start(&context);
       // Call the draw function.
       // Handles all events, executes the layout logic and populates the oplist
       (*draw)(context, data);
