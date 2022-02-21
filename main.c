@@ -13,6 +13,7 @@ typedef struct {
   char text[200];
   int textlen;
   int fontSize;
+  button_t btns[3];
 } State;
 
 void draw(AppContext *app, State *state) {
@@ -40,20 +41,31 @@ void draw(AppContext *app, State *state) {
     .background_hover = {210, 210, 210, 255},
     .label_color = {0,0,0,255},
     .label_font = &state->fontNormal,
-    .label_font_size = 20,
+    .label_font_size = 10,
   };
 
   bool res1 = false;
-  button_template.label = "Button 1";
-  button_template.result = &res1;
-  button(app, window_bounds, &button_template);
+  state->btns[0] = button_template;
+  state->btns[0].label = "Button 1";
+  state->btns[0].result = &res1;
+  button(app, window_bounds, &state->btns[0]);
 
-  op_offset(&app->oplist, (point_t){150, 0});
+  op_offset(&app->oplist, (point_t){100, 0});
 
   bool res2 = false;
-  button_template.label = "Button 2";
-  button_template.result = &res2;
-  button(app, window_bounds, &button_template);
+  state->btns[1] = button_template;
+  state->btns[1].label = "Button 2";
+  state->btns[1].result = &res2;
+  button(app, window_bounds, &state->btns[1]);
+
+  op_offset(&app->oplist, (point_t){100, 0});
+
+  bool res3 = false;
+  state->btns[2] = button_template;
+  state->btns[2].label = "Button 3";
+  state->btns[2].result = &res3;
+  button(app, window_bounds, &state->btns[2]);
+
   /*widget_draw(app, window_bounds, 
     &(widget_t){
       .draw = (widget_draw_t) text,
@@ -110,7 +122,7 @@ int main(void) {
     .fontSize = 90,
   };
 
-  state.fontNormal = load_font(app, "cmr10", 0.685, 0.115);
+  state.fontNormal = load_font(app, "Roboto", 0.685, 0.115);
   //state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
 
   application_loop(app, (AppLoopFunction) draw, &state);

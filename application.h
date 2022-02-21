@@ -28,8 +28,14 @@ typedef struct {
 typedef struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
-  // Holds per frame data like events. Freed after every frame.
-  arena_allocator_t frameArena;
+
+  // These two allocators hold per frame data and are freed after every frame.
+  // They are seperated so that the events can be cleared before the operations
+  // are executed, this way, events for the next frame can be created during
+  // operation execution.
+  arena_allocator_t event_arena;
+  arena_allocator_t ops_arena;
+
   EventQueue eventqueue;
   oplist_t oplist;
   WindowInfo window;

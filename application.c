@@ -74,16 +74,17 @@ struct AppContext *application_create(void) {
   };
 
   // TODO: It should be easier to use a sensible default like pagesize
-  state->frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  state->event_arena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  state->ops_arena = new_arena_allocator(getpagesize() - sizeof(size_t));
 
   state->eventqueue = (EventQueue){
-    .arena = &state->frameArena,
+    .arena = &state->event_arena,
     .head = NULL,
     .tail = NULL,
   };
 
   state->oplist = (oplist_t){
-    .arena = &state->frameArena,
+    .arena = &state->ops_arena,
     .head = NULL,
     .tail = NULL,
   };
@@ -204,16 +205,6 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         .pxRatio = pxRatio,
       };
 
-      // Call the draw function.
-      // Handles all events, executes the layout logic and populates the oplist
-      (*draw)(context, data);
-
-      //oplist_print(&context->oplist);
-      application_oplist_execute(context);
-
-      nvgEndFrame(context->vg);
-      glfwSwapBuffers(context->glWindow);
-
       // If a frame had events to handle, force another draw on the next frame.
       // This fixes the issue of displaying data before changing it.
       //
@@ -230,9 +221,24 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         forceNextFrameDraw = false;
       }
 
+      // Call the draw function.
+      // Handles all events, executes the layout logic and populates the oplist
+      (*draw)(context, data);
+
+      // Clear events from last frame.
+      // Occurs before the oplist execution so events for the next frame can
+      // be created during execution.
       eventqueue_clear(&context->eventqueue);
+      arena_allocator_reset(&context->event_arena);
+
+      //oplist_print(&context->oplist);
+      application_oplist_execute(context);
+
+      nvgEndFrame(context->vg);
+      glfwSwapBuffers(context->glWindow);
+
       oplist_clear(&context->oplist);
-      arena_allocator_reset(&context->frameArena);
+      arena_allocator_reset(&context->ops_arena);
     }
 
     /* Limit FPS */
