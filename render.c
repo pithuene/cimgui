@@ -14,7 +14,7 @@ void draw(AppContext *app, State *state) {
       .draw = (widget_draw_t) text,
       .data = &(text_t){
         .color = (color_t){0, 0, 0, 255},
-        .content = "Tesst",
+        .content = "Testing",
         .font = &state->fontNormal,
         .size = 30,
       }
@@ -35,7 +35,7 @@ void draw(AppContext *app, State *state) {
 
   bool res1 = false;
   state->btns[0] = button_template;
-  state->btns[0].label = "Button 1";
+  state->btns[0].label = "Button";
   state->btns[0].result = &res1;
   button(app, window_bounds, &state->btns[0]);
 

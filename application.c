@@ -163,15 +163,6 @@ typedef struct {
   time_t loaded_last_modified;
 } hot_reload_state_t;
 
-time_t get_mtime(const char *path) {
-  struct stat statbuf;
-  if (stat(path, &statbuf) == -1) {
-    perror(path);
-    exit(1);
-  }
-  return statbuf.st_mtime;
-}
-
 void empty_app_loop_function(AppContext * app, void * data) {
   bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
   rect(app, window_bounds, &(rect_t){.color = {255,83,83,255}});
@@ -194,8 +185,20 @@ void empty_app_loop_function(AppContext * app, void * data) {
 // Returns whether a new version was loaded
 static bool hot_code_load(hot_reload_state_t *hrs) {
   const char *so_path = "./render.so";
-  time_t last_modified = get_mtime(so_path);
 
+  // Get file stats of shared object
+  struct stat so_stats;
+  if (stat(so_path, &so_stats) == -1) {
+    perror(so_path);
+    exit(1);
+  }
+
+  if (so_stats.st_size <= 0) {
+    // During recompilation the file size is zero before the write is done.
+    return false;
+  }
+
+  time_t last_modified = so_stats.st_mtime;
   if (!(last_modified > hrs->loaded_last_modified)) {
     // Current version already loaded
     return false;
@@ -208,7 +211,7 @@ static bool hot_code_load(hot_reload_state_t *hrs) {
     hrs->curr_handle = NULL;
   }
 
-  void *new_handle = dlopen(so_path, RTLD_NOW | RTLD_LOCAL);
+  void *new_handle = dlopen(so_path, RTLD_NOW);
   if (new_handle) {
     hr_guest_t *hr_guest = (hr_guest_t *) dlsym(new_handle, "hr_guest_draw");
     AppLoopFunction new_draw = hr_guest->draw;
@@ -216,7 +219,12 @@ static bool hot_code_load(hot_reload_state_t *hrs) {
       hrs->draw = new_draw;
       hrs->curr_handle = new_handle;
       hrs->loaded_last_modified = last_modified;
+    } else {
+      printf("new_draw undefined\n");
     }
+  } else {
+    printf("new_handle undefined: %s\n", dlerror());
+    printf("file size is: %lo\n", so_stats.st_size);
   }
   return true;
 }
