@@ -1,10 +1,13 @@
-CFLAGS = -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Werror 
+CFLAGS = -g -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Werror 
 
 .PHONY: all
 all: main
 
 .PHONY: run
-run: main
+run: render.so
+
+.PHONY: runmain
+runmain: main render.so
 	./main
 
 .PHONY: clean
@@ -16,6 +19,7 @@ clean:
 	make -C checktag clean
 	rm -f nanovg.o
 	rm -f main
+	rm -f render.so
 
 nanovg.o: nanovg/src/nanovg.c
 	cc -c -std=c99 nanovg/src/nanovg.c
@@ -41,9 +45,11 @@ ops/ops.a: force_look
 checktag/checktag.a: force_look
 	$(MAKE) -C checktag PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 )
+main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a render.so
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 ) -ldl -rdynamic
 
+render.so: render.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a
+	cc $(CFLAGS) -shared -fPIC -o render.so render.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a
 
 force_look:
 	true

@@ -43,9 +43,14 @@ typedef struct AppContext {
   // Time since last draw. Useful for framerate independent speed.
   double deltatime;
   _MouseButtonHeldDownState _lastMouseButtonPresses[3];
+  Font font_fallback;
 } AppContext;
 
 typedef void(*AppLoopFunction)(AppContext *, void *);
+
+typedef struct {
+  AppLoopFunction draw;
+} hr_guest_t;
 
 // Execute all operations in the application oplist
 void application_oplist_execute(AppContext *app);
@@ -57,7 +62,5 @@ void application_loop(
   void * data
 );
 void application_free(AppContext *state);
-
-Font application_register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset);
 
 #endif

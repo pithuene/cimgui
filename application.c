@@ -14,6 +14,10 @@
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
 #include "checktag/checktag.h"
+#include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include "widgets/widgets.h"
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -146,11 +150,79 @@ struct AppContext *application_create(void) {
 		printf("Could not init nanovg.\n");
     exit(1);
 	}
+
+  // TODO: Fix scaling factors
+  state->font_fallback = load_font(state->vg, "sans", 0.685, 0.115);
+
 	return state;
 }
 
+typedef struct {
+  void *curr_handle;
+  AppLoopFunction draw;
+  time_t loaded_last_modified;
+} hot_reload_state_t;
 
-void application_loop(struct AppContext *context, void(*draw)(struct AppContext*, void *), void * data) {
+time_t get_mtime(const char *path) {
+  struct stat statbuf;
+  if (stat(path, &statbuf) == -1) {
+    perror(path);
+    exit(1);
+  }
+  return statbuf.st_mtime;
+}
+
+void empty_app_loop_function(AppContext * app, void * data) {
+  bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
+  rect(app, window_bounds, &(rect_t){.color = {255,83,83,255}});
+  op_offset(&app->oplist, (point_t){50,50});
+  text(app, window_bounds, &(text_t){
+    .color = (color_t){0,0,0,255},
+    .content = "No draw function loaded currently.",
+    .font = &app->font_fallback,
+    .size = 20,
+  });
+  op_offset(&app->oplist, (point_t){0,30});
+  text(app, window_bounds, &(text_t){
+    .color = (color_t){0,0,0,255},
+    .content = "Either waiting for hot reloading or the hot reloading module was not found.",
+    .font = &app->font_fallback,
+    .size = 20,
+  });
+}
+
+// Returns whether a new version was loaded
+static bool hot_code_load(hot_reload_state_t *hrs) {
+  const char *so_path = "./render.so";
+  time_t last_modified = get_mtime(so_path);
+
+  if (!(last_modified > hrs->loaded_last_modified)) {
+    // Current version already loaded
+    return false;
+  }
+
+  // Unload current version
+  hrs->draw = empty_app_loop_function;
+  if (hrs->curr_handle) {
+    dlclose(hrs->curr_handle);
+    hrs->curr_handle = NULL;
+  }
+
+  void *new_handle = dlopen(so_path, RTLD_NOW | RTLD_LOCAL);
+  if (new_handle) {
+    hr_guest_t *hr_guest = (hr_guest_t *) dlsym(new_handle, "hr_guest_draw");
+    AppLoopFunction new_draw = hr_guest->draw;
+    if (new_draw) {
+      hrs->draw = new_draw;
+      hrs->curr_handle = new_handle;
+      hrs->loaded_last_modified = last_modified;
+    }
+  }
+  return true;
+}
+
+
+void application_loop(struct AppContext *context, AppLoopFunction initial_draw, void * data) {
   double t = glfwGetTime();
 	double prevt = 0;
 	glfwSwapInterval(0);
@@ -158,11 +230,23 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 	glfwSetTime(0);
 	prevt = glfwGetTime();
 
+  hot_reload_state_t hr_state = {
+    .curr_handle = NULL,
+    .draw = empty_app_loop_function,
+  };
+
   // Forces the next frame even if there are no events
   // Set to true to trigger the initial draw.
   bool forceNextFrameDraw = true;
 
 	while (!glfwWindowShouldClose(context->glWindow)) {
+    bool hot_reload_performed = hot_code_load(&hr_state);
+
+    if (hot_reload_performed) {
+      // Force a redraw if a new version was linked in
+      eventqueue_enqueue(&context->eventqueue, nop_event());
+    }
+
 		double mx, my, dt;
 		int winWidth, winHeight;
 		int fbWidth, fbHeight;
@@ -225,7 +309,7 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
       set_draw_stack_start(&context);
       // Call the draw function.
       // Handles all events, executes the layout logic and populates the oplist
-      (*draw)(context, data);
+      (*hr_state.draw)(context, data);
 
       // Clear events from last frame.
       // Occurs before the oplist execution so events for the next frame can
@@ -290,12 +374,3 @@ void application_oplist_execute(AppContext *app) {
   }
 }
 
-Font application_register_font(AppContext *context, const char *name, const char *filename, float heightFactor, float heightOffset) {
-  Font font = {
-    .name = name,
-    .heightFactor = heightFactor,
-    .heightOffset = heightOffset,
-  };
-	font.handle = nvgCreateFont(context->vg, name, filename);
-  return font;
-}
