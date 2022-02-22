@@ -13,6 +13,7 @@
 #include <unistd.h>
 #define NANOVG_GL3_IMPLEMENTATION
 #include "nanovg/src/nanovg_gl.h"
+#include "checktag/checktag.h"
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -74,16 +75,17 @@ struct AppContext *application_create(void) {
   };
 
   // TODO: It should be easier to use a sensible default like pagesize
-  state->frameArena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  state->event_arena = new_arena_allocator(getpagesize() - sizeof(size_t));
+  state->ops_arena = new_arena_allocator(getpagesize() - sizeof(size_t));
 
   state->eventqueue = (EventQueue){
-    .arena = &state->frameArena,
+    .arena = &state->event_arena,
     .head = NULL,
     .tail = NULL,
   };
 
   state->oplist = (oplist_t){
-    .arena = &state->frameArena,
+    .arena = &state->ops_arena,
     .head = NULL,
     .tail = NULL,
   };
@@ -171,15 +173,15 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
 
     // Draw only if there are events to be handled or if the next frame is forced.
     if (forceNextFrameDraw || !eventqueue_isempty(&context->eventqueue)) {
+      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
+      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
+
       // Update and render
       glViewport(0, 0, fbWidth, fbHeight);
       // Background
       glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
 
-      // TODO: Move this before glViewport to remove stutter on window resize?
-      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
-      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
 
       // Calculate pixel ration for hi-dpi devices.
       pxRatio = (float)fbWidth / (float)winWidth;
@@ -204,16 +206,6 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         .pxRatio = pxRatio,
       };
 
-      // Call the draw function.
-      // Handles all events, executes the layout logic and populates the oplist
-      (*draw)(context, data);
-
-      //oplist_print(&context->oplist);
-      application_oplist_execute(context);
-
-      nvgEndFrame(context->vg);
-      glfwSwapBuffers(context->glWindow);
-
       // If a frame had events to handle, force another draw on the next frame.
       // This fixes the issue of displaying data before changing it.
       //
@@ -230,9 +222,25 @@ void application_loop(struct AppContext *context, void(*draw)(struct AppContext*
         forceNextFrameDraw = false;
       }
 
+      set_draw_stack_start(&context);
+      // Call the draw function.
+      // Handles all events, executes the layout logic and populates the oplist
+      (*draw)(context, data);
+
+      // Clear events from last frame.
+      // Occurs before the oplist execution so events for the next frame can
+      // be created during execution.
       eventqueue_clear(&context->eventqueue);
+      arena_allocator_reset(&context->event_arena);
+
+      //oplist_print(&context->oplist);
+      application_oplist_execute(context);
+
+      nvgEndFrame(context->vg);
+      glfwSwapBuffers(context->glWindow);
+
       oplist_clear(&context->oplist);
-      arena_allocator_reset(&context->frameArena);
+      arena_allocator_reset(&context->ops_arena);
     }
 
     /* Limit FPS */

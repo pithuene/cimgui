@@ -6,13 +6,26 @@ point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
   float xPadding = 10;
   float yPadding = 10;
 
-  point_t label_size = text_bounds(app->vg, conf->label_font_size, conf->label_font, conf->label, NULL);
-
-  bbox_t button_bounds = bbox_from_dims(
-      (point_t){constraints.min.x, constraints.min.y},
-      2*xPadding + label_size.x,
-      2*yPadding + label_size.y
+  deferred_draw_t label_draw = widget_draw_deferred(app, constraints,
+    &(widget_t){
+      (widget_draw_t)text,
+      &(text_t){
+        .color   = conf->label_color,
+        .font    = conf->label_font,
+        .size    = conf->label_font_size,
+        .content = conf->label,
+      }
+    }
   );
+
+  point_t label_size = label_draw.dimensions;
+
+  static bbox_t button_bounds = {0};
+  op_area_mapping(&app->oplist, (point_t){
+    2*xPadding + label_size.x,
+    2*yPadding + label_size.y,
+  }, &button_bounds);
+
 
   bool hover = intersects_point_bbox(app->cursor, button_bounds);
 
@@ -47,9 +60,7 @@ point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
     .y = yPadding,
   });
 
-  op_begin_path(&app->oplist);
-  op_fill_color(&app->oplist, conf->label_color);
-  op_text(&app->oplist, conf->label_font_size, conf->label_font, conf->label, NULL);
+  deferred_draw_execute(app, label_draw);
 
   op_offset(&app->oplist, (point_t){
     .x = -xPadding,

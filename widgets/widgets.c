@@ -10,8 +10,9 @@ deferred_draw_t widget_draw_deferred(AppContext *app, bbox_t constraints, widget
 
   // Draw widget into temporary oplist
   app->oplist = oplist_create(&app->oplist);
+  point_t dimensions = widget->draw(app, constraints, widget->data);
   deferred_draw_t res = {
-    .dimensions = widget->draw(app, constraints, widget->data),
+    .dimensions = dimensions,
     .ops        = app->oplist,
   };
 
