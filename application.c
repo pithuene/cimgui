@@ -376,9 +376,36 @@ void application_oplist_execute(AppContext *app) {
   op_execution_state_t exec_state = {
     .vg = app->vg,
     .offset = {0,0},
+    .eventqueue = &app->eventqueue,
   };
   for (oplist_item_t *item = app->oplist.head; item != NULL; item = item->next) {
     op_execute(&exec_state, item->op);
   }
 }
 
+input_area_t register_input_area(AppContext *app, point_t dimensions, uint64_t area_id) {
+  op_register_input_area(&app->oplist, dimensions, area_id);
+
+  eventqueue_foreach(InputEvent event, app->eventqueue) {
+    if (event.type == eventtype_inputareamapping
+      && event.instance.inputareamapping.area_id == area_id) {
+      return event.instance.inputareamapping.mapped_area;
+    }
+  }
+  return (input_area_t){
+    .min = {0,0},
+    .max = {0,0},
+  };
+}
+
+bool is_cursor_in_input_area(AppContext *app, input_area_t area) {
+  return intersects_point_bbox(app->cursor, area);
+}
+
+bool is_point_in_input_area(point_t point, input_area_t area) {
+  return intersects_point_bbox(point, area);
+}
+
+point_t position_relative_to_input_area(point_t point, input_area_t area) {
+  return point_add(point, point_multiply(area.min, -1));
+}

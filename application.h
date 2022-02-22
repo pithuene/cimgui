@@ -63,4 +63,16 @@ void application_loop(
 );
 void application_free(AppContext *state);
 
+// Wrapper which both registers an input area for the next frame
+// and retreives the mapping from the event emitted last frame.
+input_area_t register_input_area(AppContext *app, point_t dimensions, uint64_t area_id);
+
+// These helpers exist to discourage use area mappings for things despite point intersection.
+
+bool is_cursor_in_input_area(AppContext *app, input_area_t area);
+bool is_point_in_input_area(point_t point, input_area_t area);
+
+// Calculate the position of a point relative to the topleft of an input area
+point_t position_relative_to_input_area(point_t point, input_area_t area);
+
 #endif

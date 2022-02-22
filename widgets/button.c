@@ -1,4 +1,7 @@
 #include "widgets.h"
+#include "../checktag/checktag.h"
+#include "../application.h"
+#include <stdio.h>
 
 point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
   bool result = false;
@@ -25,27 +28,29 @@ point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
     2*yPadding + label_size.y,
   };
 
-  static bbox_t drawn_button_bounds = {0};
-  op_area_mapping(&app->oplist, button_dimensions, &drawn_button_bounds);
+  // TODO: Expecting that the label is a string constant which is used only for this button. Should probably be changed to expecting an id in the config.
+  uint64_t input_area_id = (uint64_t) conf->label;
+  check_tag((void *) input_area_id);
+  input_area_t input_area = register_input_area(app, button_dimensions, input_area_id);
 
-  bool hover = intersects_point_bbox(app->cursor, drawn_button_bounds);
+  bool hover = is_cursor_in_input_area(app, input_area);
 
   color_t background = hover ? conf->background_hover : conf->background;
 
   eventqueue_foreach(InputEvent event, app->eventqueue) {
-    if (event.type == InputMouseButtonPressEvent) {
-      const bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonpress.cursor, drawn_button_bounds);
+    if (event.type == eventtype_mousebuttonpress) {
+      const bool press_over_btn = is_point_in_input_area(event.instance.mousebuttonpress.cursor, input_area);
       if (press_over_btn) {
         background = conf->background_down;
       }
-    } else if (event.type == InputMouseButtonHeldDownEvent) {
-      bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonhelddown.initialPress.cursor, drawn_button_bounds);
+    } else if (event.type == eventtype_mousebuttonhelddown) {
+      bool press_over_btn = is_point_in_input_area(event.instance.mousebuttonhelddown.initialPress.cursor, input_area);
       if (press_over_btn) {
         background = conf->background_down;
       }
-    } else if (event.type == InputMouseButtonReleaseEvent) {
-      bool press_over_btn = intersects_point_bbox(event.instance.mousebuttonrelease.initialPress.cursor, drawn_button_bounds);
-      bool release_over_btn = intersects_point_bbox(event.instance.mousebuttonrelease.cursor, drawn_button_bounds);
+    } else if (event.type == eventtype_mousebuttonrelease) {
+      bool press_over_btn = is_point_in_input_area(event.instance.mousebuttonrelease.initialPress.cursor, input_area);
+      bool release_over_btn = is_point_in_input_area(event.instance.mousebuttonrelease.cursor, input_area);
       if (press_over_btn && release_over_btn) {
         result = true;
       }

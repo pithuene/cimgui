@@ -5,6 +5,14 @@
 #include "../utils/utils.h"
 #include "../ds/mem/arenaalloc.h"
 
+// TODO: Rename InputEvent to just Event as this system is now used for non-input events
+// TODO: Change MyType naming to my_type_t
+
+// Mainly here to discourage using the input area outside of eventhandling,
+// as the fact that it is sometimes empty and always a frame behind could
+// lead to some very confusing behaviour.
+typedef bbox_t input_area_t;
+
 typedef enum {
   MouseButtonLeft   = 0,
   MouseButtonRight  = 1,
@@ -57,17 +65,25 @@ typedef struct {
   int                   mods;
 } MouseButtonReleaseEvent;
 
+// Used to pass information about where an area was drawn
+// to the screen to the next frame.
+typedef struct {
+  uint64_t area_id;
+  input_area_t mapped_area;
+} InputAreaMappingEvent;
+
 typedef enum {
-  InputNopEvent,
-  InputKeyEvent,
-  InputCharEvent,
-  InputMouseButtonPressEvent,
-  InputMouseButtonHeldDownEvent,
-  InputMouseButtonReleaseEvent,
-} InputEventType;
+  eventtype_nop,
+  eventtype_key,
+  eventtype_char,
+  eventtype_mousebuttonpress,
+  eventtype_mousebuttonhelddown,
+  eventtype_mousebuttonrelease,
+  eventtype_inputareamapping,
+} eventtype_t;
 
 typedef struct {
-  InputEventType type;
+  eventtype_t type;
   union {
     NopEvent nop;
     KeyEvent key;
@@ -75,6 +91,7 @@ typedef struct {
     MouseButtonPressEvent mousebuttonpress;
     MouseButtonHeldDownEvent mousebuttonhelddown;
     MouseButtonReleaseEvent mousebuttonrelease;
+    InputAreaMappingEvent inputareamapping;
   } instance;
 } InputEvent;
 
@@ -85,6 +102,12 @@ InputEvent char_event(unsigned int codepoint, int mods);
 InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods);
 InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods);
 InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods);
+
+// TODO: I think it would theoretically be a good idea to separate
+// area mapping events from the event queue. If there are many clickable
+// areas, there will be equally many events which every eventqueue_foreach
+// will needlessly loop through.
+InputEvent inputareamapping_event(uint64_t area_id, input_area_t area);
 
 typedef struct EventQueueItem {
   InputEvent event;

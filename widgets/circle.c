@@ -1,9 +1,16 @@
 #include "widgets.h"
 
-bbox_t circle_center_at(point_t center, float radius) {
+bbox_t circle_dimensions(float radius) {
   return (bbox_t){
-    .min = { center.x - radius, center.y - radius },
-    .max = { center.x + radius, center.y + radius },
+    .min = {0,0},
+    .max = {2*radius,2*radius},
+  };
+}
+
+point_t circle_center_at(point_t center, float radius) {
+  return (point_t){
+    .x = center.x - radius,
+    .y = center.y - radius,
   };
 }
 

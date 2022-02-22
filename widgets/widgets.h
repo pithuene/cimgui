@@ -40,8 +40,11 @@ typedef struct {
 
 point_t circle(AppContext *app, bbox_t constraints, circle_t *conf);
 
-// Helper to generate bbox for a circle
-bbox_t circle_center_at(point_t center, float radius);
+// Calculates the offset needed to put a circles center at given offset
+point_t circle_center_at(point_t center, float radius);
+
+// Calculate the dimensions for a circle of a given radius
+bbox_t circle_dimensions(float radius);
 
 typedef struct {
   Font       *font;

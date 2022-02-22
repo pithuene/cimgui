@@ -5,6 +5,7 @@
 #include "../ds/mem/arenaalloc.h"
 #include "../utils/utils.h"
 #include "../font/font.h"
+#include "../events/events.h"
 
 // The first field in every op struct is an optype_t type,
 // which specifies the type of the operation.
@@ -17,7 +18,7 @@ typedef enum {
   optype_rect,
   optype_circle,
   optype_text,
-  optype_area_mapping,
+  optype_register_input_area,
 } optype_t;
 
 typedef struct {
@@ -63,9 +64,9 @@ typedef struct {
 
 typedef struct {
   optype_t type;
-  point_t  source;
-  bbox_t  *result;
-} op_area_mapping_t;
+  uint64_t area_id;
+  point_t  dimensions;
+} op_register_input_area_t;
 
 typedef struct oplist_item_t {
   // Points to the operation struct.
@@ -95,8 +96,9 @@ void oplist_clear(oplist_t *oplist);
 void oplist_print(oplist_t *oplist);
 
 typedef struct {
-  NVGcontext *vg;
-  point_t     offset;
+  NVGcontext  *vg;
+  point_t      offset;
+  EventQueue *eventqueue;
 } op_execution_state_t;
 
 void op_execute(op_execution_state_t *state, optype_t *op);
@@ -109,8 +111,18 @@ void op_fill(oplist_t *oplist);
 void op_rect(oplist_t *oplist, float width, float height);
 void op_circle(oplist_t *oplist, float radius);
 void op_text(oplist_t *oplist, float size, Font *font, const char *string, const char *end);
-void op_area_mapping(oplist_t *oplist, point_t source, bbox_t *result);
+// Register an input area by which input events can be filtered.
+// To approximate where something will be drawn before op execution, the position it ended up at last frame is used.
+// This is done by saving the information during the actual draw
+// and passing it to the next one using an event.
+// This means data is always one frame behind and there is no data on the first draw.
+void op_register_input_area(oplist_t *oplist, point_t dimensions, uint64_t area_id);
 
 point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, const char *end);
+
+#define with_offset(OPLIST, OFFSET) for (         \
+  int _defer_i ##__LINE__ = (op_offset(OPLIST, OFFSET), 0); \
+  !_defer_i ## __LINE__;                \
+  (_defer_i ## __LINE__ += 1), op_offset(OPLIST, point_multiply(OFFSET, -1)))
 
 #endif

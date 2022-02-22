@@ -2,13 +2,13 @@
 
 InputEvent nop_event(void) {
   return (InputEvent){
-    .type = InputNopEvent,
+    .type = eventtype_nop,
   };
 }
 
 InputEvent key_event(int key, int scancode, ButtonAction action, int mods) {
   return (InputEvent){
-    .type = InputKeyEvent,
+    .type = eventtype_key,
     .instance.key = {
       .key = key,
       .scancode = scancode,
@@ -20,7 +20,7 @@ InputEvent key_event(int key, int scancode, ButtonAction action, int mods) {
 
 InputEvent char_event(unsigned int codepoint, int mods) {
   return (InputEvent){
-    .type = InputCharEvent,
+    .type = eventtype_char,
     .instance.character = {
       .codepoint = codepoint,
       .mods = mods,
@@ -30,7 +30,7 @@ InputEvent char_event(unsigned int codepoint, int mods) {
 
 InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
-    .type = InputMouseButtonPressEvent,
+    .type = eventtype_mousebuttonpress,
     .instance.mousebuttonpress = {
       .button = button,
       .mods = mods,
@@ -41,7 +41,7 @@ InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods) 
 
 InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
-    .type = InputMouseButtonHeldDownEvent,
+    .type = eventtype_mousebuttonhelddown,
     .instance.mousebuttonhelddown = {
       .initialPress = press,
       .button = button,
@@ -53,12 +53,22 @@ InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton bu
 
 InputEvent mousebuttonrelease_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods) {
   return (InputEvent){
-    .type = InputMouseButtonReleaseEvent,
+    .type = eventtype_mousebuttonrelease,
     .instance.mousebuttonrelease = {
       .initialPress = press,
       .button = button,
       .mods = mods,
       .cursor = cursor,
+    }
+  };
+}
+
+InputEvent inputareamapping_event(uint64_t area_id, input_area_t area) {
+  return (InputEvent){
+    .type = eventtype_inputareamapping,
+    .instance.inputareamapping = {
+      .area_id = area_id,
+      .mapped_area = area,
     }
   };
 }

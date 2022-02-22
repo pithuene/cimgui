@@ -35,7 +35,7 @@ void draw(AppContext *app, State *state) {
 
   bool res1 = false;
   state->btns[0] = button_template;
-  state->btns[0].label = "Button";
+  state->btns[0].label = "Button 1";
   state->btns[0].result = &res1;
   button(app, window_bounds, &state->btns[0]);
 
@@ -54,6 +54,17 @@ void draw(AppContext *app, State *state) {
   state->btns[2].label = "Button 3";
   state->btns[2].result = &res3;
   button(app, window_bounds, &state->btns[2]);
+
+  op_offset(&app->oplist, (point_t){-200, 100});
+
+  static int sliderval = 0;
+  slider(app, window_bounds, &(slider_t){
+    .font = &state->fontNormal,
+    .min = 0,
+    .max = 100,
+    .step = 1,
+    .value = &sliderval,
+  });
 
   /*widget_draw(app, window_bounds, 
     &(widget_t){
