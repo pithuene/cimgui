@@ -151,8 +151,7 @@ struct AppContext *application_create(void) {
     exit(1);
 	}
 
-  // TODO: Fix scaling factors
-  state->font_fallback = load_font(state->vg, "sans", 0.685, 0.115);
+  state->font_fallback = load_font(state->vg, "sans", 0.73, 0.065);
 
 	return state;
 }

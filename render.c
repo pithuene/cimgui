@@ -14,14 +14,18 @@ void draw(AppContext *app, State *state) {
       .draw = (widget_draw_t) text,
       .data = &(text_t){
         .color = (color_t){0, 0, 0, 255},
-        .content = "Testing",
+        .content = "Testing something here",
         .font = &state->fontNormal,
         .size = 30,
       }
     }
   );
-  rect(app, (bbox_t){{0}, d.dimensions}, &(rect_t){.color = {10,200,200,255}});
-  deferred_draw_execute(app, d);
+
+  with_offset(&app->oplist, (point_t){10, 10}) {
+    rect(app, (bbox_t){{0}, d.dimensions}, &(rect_t){.color = {10,200,200,255}});
+    deferred_draw_execute(app, d);
+  }
+
   op_offset(&app->oplist, (point_t){100, 100});
 
   button_t button_template = {
@@ -57,13 +61,24 @@ void draw(AppContext *app, State *state) {
 
   op_offset(&app->oplist, (point_t){-200, 100});
 
-  static int sliderval = 0;
+  static int sliderval = 50;
   slider(app, window_bounds, &(slider_t){
     .font = &state->fontNormal,
     .min = 0,
     .max = 100,
     .step = 1,
     .value = &sliderval,
+  });
+
+  op_offset(&app->oplist, (point_t){0, 100});
+
+  static int sliderval2 = 50;
+  slider(app, window_bounds, &(slider_t){
+    .font = &state->fontNormal,
+    .min = 0,
+    .max = 100,
+    .step = 1,
+    .value = &sliderval2,
   });
 
   /*widget_draw(app, window_bounds, 

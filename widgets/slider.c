@@ -111,20 +111,28 @@ point_t slider(AppContext *app, bbox_t constraints, slider_t *conf) {
     }
 
     // Draw value label
-    char valuelabel[10];
+    char *valuelabel = arenaalloc(&app->ops_arena, 10);
     sprintf(valuelabel, "%d", *conf->value);
-    //value_label_position = bbox_move(value_label_position, (point_t){.y = 25});
-    with_offset(&app->oplist, slider_center) {
-      text(
-        app,
-        (bbox_t){0},
+
+    deferred_draw_t value_label_draw = widget_draw_deferred(app, constraints,
+      &(widget_t){
+        (widget_draw_t) text,
         &(text_t){
-          .font = conf->font,
-          .size = 10,
-          .content = valuelabel,
-          .color = {0,0,0,255},
+        .font = conf->font,
+        .size = 10,
+        .content = valuelabel,
+        .color = {0,0,0,255},
         }
-      );
+      }
+    );
+
+    point_t value_label_offset = point_add(slider_center, (point_t){
+      .y = 15,
+      .x = -value_label_draw.dimensions.x / 2
+    });
+
+    with_offset(&app->oplist, value_label_offset) {
+      deferred_draw_execute(app, value_label_draw);
     }
   }
 

@@ -13,13 +13,13 @@ int main(void) {
   AppContext *app = application_create();
 
   State state =  {
-    .text = "HItart: ",
+    .text = "Start: ",
     .textlen = 7,
     .fontSize = 90,
   };
 
-  state.fontNormal = load_font(app->vg, "Roboto", 0.685, 0.115);
-  //state.fontNormal = register_font(app, "sans", "/home/pit/code/nanovg-test/nanovg/example/Roboto-Regular.ttf", 0.71, 0.11);
+  //state.fontNormal = load_font(app->vg, "Roboto", 0.73, 0.065);
+  state.fontNormal = app->font_fallback;
 
   application_loop(app, (AppLoopFunction) NULL, &state);
   application_free(app);

@@ -120,9 +120,9 @@ void op_register_input_area(oplist_t *oplist, point_t dimensions, uint64_t area_
 
 point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, const char *end);
 
-#define with_offset(OPLIST, OFFSET) for (         \
-  int _defer_i ##__LINE__ = (op_offset(OPLIST, OFFSET), 0); \
+#define with_offset(OPLIST, ...) for (         \
+  int _defer_i ##__LINE__ = (op_offset((OPLIST), (__VA_ARGS__)), 0); \
   !_defer_i ## __LINE__;                \
-  (_defer_i ## __LINE__ += 1), op_offset(OPLIST, point_multiply(OFFSET, -1)))
+  (_defer_i ## __LINE__ += 1), op_offset((OPLIST), point_multiply((__VA_ARGS__), -1)))
 
 #endif
