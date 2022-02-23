@@ -20,7 +20,7 @@ point_t row(AppContext *app, bbox_t constraints, row_t *conf) {
       .x = unit_length_in_px(conf->items[i].width, bbox_width(constraints)),
       .y = unit_length_in_px(conf->items[i].height, bbox_height(constraints)),
     };
-    child_draws[i] = widget_draw_deferred(app, (bbox_t){.max = child_target_sizes[i]}, conf->items[i].widget);
+    child_draws[i] = widget_draw_deferred(app, child_target_sizes[i], conf->items[i].widget);
 
     total_widget_width += child_draws[i].dimensions.x;
     if (i < conf->item_count - 1) total_widget_width += conf->spacing;

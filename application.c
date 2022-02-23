@@ -163,17 +163,17 @@ typedef struct {
 } hot_reload_state_t;
 
 void empty_app_loop_function(AppContext * app, void * data) {
-  bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
-  rect(app, window_bounds, &(rect_t){.color = {255,83,83,255}});
+  point_t window_dimensions = (point_t){app->window.width, app->window.height};
+  rect(app, window_dimensions, &(rect_t){.color = {255,83,83,255}});
   op_offset(&app->oplist, (point_t){50,50});
-  text(app, window_bounds, &(text_t){
+  text(app, window_dimensions, &(text_t){
     .color = (color_t){0,0,0,255},
     .content = "No draw function loaded currently.",
     .font = &app->font_fallback,
     .size = 20,
   });
   op_offset(&app->oplist, (point_t){0,30});
-  text(app, window_bounds, &(text_t){
+  text(app, window_dimensions, &(text_t){
     .color = (color_t){0,0,0,255},
     .content = "Either waiting for hot reloading or the hot reloading module was not found.",
     .font = &app->font_fallback,

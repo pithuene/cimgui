@@ -6,10 +6,10 @@
 void draw(AppContext *app, State *state) {
   check_tag(&state->fontSize);
 
-  bbox_t window_bounds = bbox_from_dims((point_t){0,0}, app->window.width, app->window.height);
-  deferred_draw_t d = widget_draw_deferred(
+  point_t window_dimensions = (point_t){app->window.width, app->window.height};
+  deferred_draw_t text_draw = widget_draw_deferred(
     app,
-    window_bounds,
+    window_dimensions,
     &(widget_t){
       .draw = (widget_draw_t) text,
       .data = &(text_t){
@@ -22,8 +22,8 @@ void draw(AppContext *app, State *state) {
   );
 
   with_offset(&app->oplist, (point_t){10, 10}) {
-    rect(app, (bbox_t){{0}, d.dimensions}, &(rect_t){.color = {10,200,200,255}});
-    deferred_draw_execute(app, d);
+    rect(app, text_draw.dimensions, &(rect_t){.color = {10,200,200,255}});
+    deferred_draw_execute(app, text_draw);
   }
 
   op_offset(&app->oplist, (point_t){100, 100});
@@ -41,7 +41,7 @@ void draw(AppContext *app, State *state) {
   state->btns[0] = button_template;
   state->btns[0].label = "Button 1";
   state->btns[0].result = &res1;
-  button(app, window_bounds, &state->btns[0]);
+  button(app, window_dimensions, &state->btns[0]);
 
   op_offset(&app->oplist, (point_t){100, 0});
 
@@ -49,7 +49,7 @@ void draw(AppContext *app, State *state) {
   state->btns[1] = button_template;
   state->btns[1].label = "Button 2";
   state->btns[1].result = &res2;
-  button(app, window_bounds, &state->btns[1]);
+  button(app, window_dimensions, &state->btns[1]);
 
   op_offset(&app->oplist, (point_t){100, 0});
 
@@ -57,12 +57,12 @@ void draw(AppContext *app, State *state) {
   state->btns[2] = button_template;
   state->btns[2].label = "Button 3";
   state->btns[2].result = &res3;
-  button(app, window_bounds, &state->btns[2]);
+  button(app, window_dimensions, &state->btns[2]);
 
   op_offset(&app->oplist, (point_t){-200, 100});
 
   static int sliderval = 50;
-  slider(app, window_bounds, &(slider_t){
+  slider(app, window_dimensions, &(slider_t){
     .font = &state->fontNormal,
     .min = 0,
     .max = 100,
@@ -73,25 +73,13 @@ void draw(AppContext *app, State *state) {
   op_offset(&app->oplist, (point_t){0, 100});
 
   static int sliderval2 = 50;
-  slider(app, window_bounds, &(slider_t){
+  slider(app, window_dimensions, &(slider_t){
     .font = &state->fontNormal,
     .min = 0,
     .max = 100,
     .step = 1,
     .value = &sliderval2,
   });
-
-  /*widget_draw(app, window_bounds, 
-    &(widget_t){
-      .draw = (widget_draw_t) text,
-      .data = &(text_t){
-        .color = (color_t){0, 0, 0, 255},
-        .content = "Test",
-        .font = &state->fontNormal,
-        .size = 30,
-      }
-    }
-  );*/
 }
 
 hr_guest_t hr_guest_draw = {

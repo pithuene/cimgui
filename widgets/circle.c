@@ -1,10 +1,7 @@
 #include "widgets.h"
 
-bbox_t circle_dimensions(float radius) {
-  return (bbox_t){
-    .min = {0,0},
-    .max = {2*radius,2*radius},
-  };
+point_t circle_dimensions(float radius) {
+  return (point_t){2*radius,2*radius};
 }
 
 point_t circle_center_at(point_t center, float radius) {
@@ -14,11 +11,11 @@ point_t circle_center_at(point_t center, float radius) {
   };
 }
 
-point_t circle(AppContext *app, bbox_t constraints, circle_t *conf) {
+point_t circle(AppContext *app, point_t constraints, circle_t *conf) {
   // Diameter is the minimum of width and height
-  float diameter = bbox_width(constraints);
-  if (bbox_height(constraints) < diameter)
-    diameter = bbox_height(constraints);
+  float diameter = constraints.x;
+  if (constraints.y < diameter)
+    diameter = constraints.y;
 
   float radius = diameter / 2.0;
 

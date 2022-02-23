@@ -1,10 +1,10 @@
 #include "widgets.h"
 
-point_t widget_draw(AppContext *app, bbox_t constraints, widget_t *widget) {
+point_t widget_draw(AppContext *app, point_t constraints, widget_t *widget) {
   return widget->draw(app, constraints, widget->data);
 }
 
-deferred_draw_t widget_draw_deferred(AppContext *app, bbox_t constraints, widget_t *widget) {
+deferred_draw_t widget_draw_deferred(AppContext *app, point_t constraints, widget_t *widget) {
   // Backup the original oplist
   oplist_t original_ops = app->oplist;
 

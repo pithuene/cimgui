@@ -4,7 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 
-point_t slider(AppContext *app, bbox_t constraints, slider_t *conf) {
+point_t slider(AppContext *app, point_t constraints, slider_t *conf) {
   color_t track_color = {66, 66, 66, 255};
   color_t track_value_color = {150, 150, 150, 255};
   color_t track_value_color_active = {20, 192, 80, 255};
@@ -77,18 +77,14 @@ point_t slider(AppContext *app, bbox_t constraints, slider_t *conf) {
   // Track
   rect(
     app,
-    (bbox_t){
-      .max = (point_t){track_width, track_line_width},
-    },
+    (point_t){track_width, track_line_width},
     &(rect_t){.color = track_color}
   );
 
   // Active track
   rect(
     app,
-    (bbox_t){
-      .max = (point_t){track_value_width, track_line_width},
-    },
+    (point_t){track_value_width, track_line_width},
     &(rect_t){.color = is_active ? track_value_color_active : track_value_color}
   );
 

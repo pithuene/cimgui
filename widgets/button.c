@@ -3,7 +3,7 @@
 #include "../application.h"
 #include <stdio.h>
 
-point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
+point_t button(AppContext *app, point_t constraints, button_t *conf) {
   bool result = false;
 
   float xPadding = 10;
@@ -57,7 +57,7 @@ point_t button(AppContext *app, bbox_t constraints, button_t *conf) {
     }
   }
 
-  rect(app, (bbox_t){.max = button_dimensions}, &(rect_t){.color = background});
+  rect(app, button_dimensions, &(rect_t){.color = background});
 
   op_offset(&app->oplist, (point_t){
     .x = xPadding,

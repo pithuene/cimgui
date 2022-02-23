@@ -1,6 +1,6 @@
 #include "widgets.h"
 
-point_t text(AppContext *app, bbox_t constraints, text_t *conf) {
+point_t text(AppContext *app, point_t constraints, text_t *conf) {
   op_begin_path(&app->oplist);
   op_fill_color(&app->oplist, conf->color);
 
