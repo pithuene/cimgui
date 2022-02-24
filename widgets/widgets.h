@@ -57,6 +57,20 @@ typedef struct {
 point_t text(AppContext *app, point_t constraints, text_t *conf);
 
 typedef struct {
+  Font       *font;
+  float       size;
+  const char *content;
+  const char *content_end;
+  color_t     color;
+  int16_t     max_rows;
+  float       spacing;
+} paragraph_t;
+
+// Layout text over multiple lines.
+// Spacing is the pixel width between lines.
+point_t paragraph(AppContext *app, point_t constraints, paragraph_t *conf);
+
+typedef struct {
   bool *result;
   const char *label;
   Font *label_font;
