@@ -37,8 +37,8 @@ typedef struct {
   element_t *items;
 } row_t;
 
-point_t row(AppContext *app, bbox_t constraints, row_t *conf);
-point_t column(AppContext *app, bbox_t constraints, row_t *conf);
+point_t row(AppContext *app, point_t constraints, row_t *conf);
+point_t column(AppContext *app, point_t constraints, row_t *conf);
 
 
 #endif

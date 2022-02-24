@@ -1,7 +1,7 @@
 #include "element.h"
 #include <stdio.h>
 
-point_t column(AppContext *app, bbox_t constraints, row_t *conf) {
+point_t column(AppContext *app, point_t constraints, row_t *conf) {
   float current_width  = 0;
   float max_height = 0;
 
@@ -17,8 +17,8 @@ point_t column(AppContext *app, bbox_t constraints, row_t *conf) {
     if (conf->items[i].y_align > current_alignment) current_alignment = conf->items[i].y_align;
 
     child_target_sizes[i] = (point_t){
-      .x = unit_length_in_px(conf->items[i].width, bbox_width(constraints)),
-      .y = unit_length_in_px(conf->items[i].height, bbox_height(constraints)),
+      .x = unit_length_in_px(conf->items[i].width, constraints.x),
+      .y = unit_length_in_px(conf->items[i].height, constraints.y),
     };
     child_draws[i] = widget_draw_deferred(app, child_target_sizes[i], conf->items[i].widget);
 
@@ -31,7 +31,7 @@ point_t column(AppContext *app, bbox_t constraints, row_t *conf) {
   }
 
   // If constraints height is greater than the talles child, the row fills that height
-  if (bbox_width(constraints) > max_height) max_height = bbox_width(constraints);
+  if (constraints.x > max_height) max_height = constraints.x;
 
   // If there are no centered children, set centered widget size to zero
   if (center_widget_width < 0) center_widget_width = 0;
@@ -39,8 +39,8 @@ point_t column(AppContext *app, bbox_t constraints, row_t *conf) {
   // Is the row wider than its constraints.
   // If so, there are no gaps.
   double total_width = total_widget_width;
-  if (total_width < bbox_height(constraints)) {
-    total_width = bbox_height(constraints);
+  if (total_width < constraints.y) {
+    total_width = constraints.y;
   }
 
   // Elements are layed out left to right.
@@ -65,8 +65,8 @@ point_t column(AppContext *app, bbox_t constraints, row_t *conf) {
     }
 
     point_t topleft = {
-      .y = constraints.min.y + current_width,
-      .x = constraints.min.x, // align_start
+      .y = current_width,
+      .x = 0, // align_start
     };
     if (conf->items[i].x_align == align_center) {
       topleft.x = (max_height - child_draws[i].dimensions.x) / 2;
