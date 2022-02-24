@@ -50,6 +50,7 @@ typedef struct {
   Font       *font;
   float       size;
   const char *content;
+  const char *content_end;
   color_t     color;
 } text_t;
 
