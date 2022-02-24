@@ -78,10 +78,10 @@ point_t row(AppContext *app, point_t constraints, row_t *conf) {
     point_t childsize = deferred_draw_execute(app, child_draws[i]);
     op_offset(&app->oplist, point_multiply(topleft, -1));
 
-    if (i < conf->item_count - 1) {
-      current_width          += childsize.x;
-      remaining_widget_width -= childsize.x;
+    current_width          += childsize.x;
+    remaining_widget_width -= childsize.x;
 
+    if (i < conf->item_count - 1) {
       current_width          += conf->spacing;
       remaining_widget_width -= conf->spacing;
     }
