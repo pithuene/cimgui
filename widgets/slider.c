@@ -24,8 +24,6 @@ point_t slider(AppContext *app, point_t constraints, slider_t *conf) {
   check_tag((void *) input_area_id);
   input_area_t input_area = register_input_area(app, widget_dimensions, input_area_id);
 
-  op_offset(&app->oplist, (point_t){.y = slider_radius});
-
   const bool is_being_hovered = is_cursor_in_input_area(app, input_area);
   bool is_active = is_being_hovered;
   bool is_being_dragged = false;
@@ -74,66 +72,68 @@ point_t slider(AppContext *app, point_t constraints, slider_t *conf) {
   const float track_value_width = track_width * slider_offset;
   slider_center.x += track_value_width;
 
-  // Track
-  rect(
-    app,
-    (point_t){track_width, track_line_width},
-    &(rect_t){.color = track_color}
-  );
-
-  // Active track
-  rect(
-    app,
-    (point_t){track_value_width, track_line_width},
-    &(rect_t){.color = is_active ? track_value_color_active : track_value_color}
-  );
-
-  // Draw slider
-  if (is_active) {
-    with_offset(&app->oplist, circle_center_at(slider_center, slider_radius)) {
-      circle(
-        app,
-        circle_dimensions(slider_radius),
-        &(circle_t){.color = slider_color}
-      );
-    }
-
-    with_offset(&app->oplist, circle_center_at(slider_center, slider_middle_radius)) {
-      circle(
-        app,
-        circle_dimensions(slider_middle_radius),
-        &(circle_t){.color = is_being_dragged ? track_value_color_active : track_color}
-      );
-    }
-
-    // Draw value label
-    char *valuelabel = arenaalloc(&app->ops_arena, 10);
-    sprintf(valuelabel, "%d", *conf->value);
-
-    deferred_draw_t value_label_draw = widget_draw_deferred(app, constraints,
-      &(widget_t){
-        (widget_draw_t) text,
-        &(text_t){
-        .font = conf->font,
-        .size = 10,
-        .content = valuelabel,
-        .color = {0,0,0,255},
-        }
-      }
+  with_offset(&app->oplist, (point_t){.y = slider_radius - (track_line_width / 2)}) {
+    // Track
+    rect(
+      app,
+      (point_t){track_width, track_line_width},
+      &(rect_t){.color = track_color}
     );
 
-    point_t value_label_offset = point_add(slider_center, (point_t){
-      .y = 15,
-      .x = -value_label_draw.dimensions.x / 2
-    });
+    // Active track
+    rect(
+      app,
+      (point_t){track_value_width, track_line_width},
+      &(rect_t){.color = is_active ? track_value_color_active : track_value_color}
+    );
 
-    with_offset(&app->oplist, value_label_offset) {
-      deferred_draw_execute(app, value_label_draw);
+    // Draw slider
+    if (is_active) {
+      with_offset(&app->oplist, circle_center_at(slider_center, slider_radius)) {
+        circle(
+          app,
+          circle_dimensions(slider_radius),
+          &(circle_t){.color = slider_color}
+        );
+      }
+
+      with_offset(&app->oplist, circle_center_at(slider_center, slider_middle_radius)) {
+        circle(
+          app,
+          circle_dimensions(slider_middle_radius),
+          &(circle_t){.color = is_being_dragged ? track_value_color_active : track_color}
+        );
+      }
+
+      // Draw value label
+      char *valuelabel = arenaalloc(&app->ops_arena, 10);
+      sprintf(valuelabel, "%d", *conf->value);
+
+      deferred_draw_t value_label_draw = widget_draw_deferred(app, constraints,
+        &(widget_t){
+          (widget_draw_t) text,
+          &(text_t){
+          .font = conf->font,
+          .size = 10,
+          .content = valuelabel,
+          .color = {0,0,0,255},
+          }
+        }
+      );
+
+      point_t value_label_offset = point_add(slider_center, (point_t){
+        .y = 15,
+        .x = -value_label_draw.dimensions.x / 2
+      });
+
+      with_offset(&app->oplist, value_label_offset) {
+        deferred_draw_execute(app, value_label_draw);
+      }
     }
   }
 
   return (point_t){
-    .x = track_width+2*slider_radius,
+    .x = track_width,
     .y = 2*slider_radius,
   };
 }
