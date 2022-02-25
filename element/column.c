@@ -1,7 +1,7 @@
 #include "element.h"
 #include <stdio.h>
 
-point_t column(AppContext *app, point_t constraints, row_t *conf) {
+point_t column(AppContext *app, point_t constraints, column_t *conf) {
   float current_width  = 0;
   float max_height = 0;
 

@@ -37,8 +37,10 @@ typedef struct {
   element_t *items;
 } row_t;
 
+typedef row_t column_t;
+
 point_t row(AppContext *app, point_t constraints, row_t *conf);
-point_t column(AppContext *app, point_t constraints, row_t *conf);
+point_t column(AppContext *app, point_t constraints, column_t *conf);
 
 
 #endif
