@@ -12,6 +12,12 @@ typedef struct {
   void         *data;
 } widget_t;
 
+#define widget(WIDGET, ...) \
+  &(widget_t){ \
+    (widget_draw_t) WIDGET, \
+    __VA_ARGS__ \
+  }
+
 #define CONSTRAINT_NONE ((bbox_t){ .min = {0, 0}, .max = {999999, 999999}})
 
 point_t widget_draw(AppContext *context, point_t constraints, widget_t *widget);
