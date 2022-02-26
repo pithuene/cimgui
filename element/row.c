@@ -7,23 +7,23 @@ point_t row(AppContext *app, point_t constraints, row_t *conf) {
 
   // Calculate the child sizes.
   // Non left-aligned childredn need to know the sizes of the children afterwards to determine their position.
-  point_t child_target_sizes[conf->item_count];
-  deferred_draw_t child_draws[conf->item_count];
+  point_t child_target_sizes[conf->children.count];
+  deferred_draw_t child_draws[conf->children.count];
   double total_widget_width = 0;
   double center_widget_width = -conf->spacing;
   axis_alignment_t current_alignment = align_start;
-  for (int i = 0; i < conf->item_count; i++) {
+  for (int i = 0; i < conf->children.count; i++) {
     // Alignment push along
-    if (conf->items[i].x_align > current_alignment) current_alignment = conf->items[i].x_align;
+    if (conf->children.elements[i].x_align > current_alignment) current_alignment = conf->children.elements[i].x_align;
 
     child_target_sizes[i] = (point_t){
-      .x = unit_length_in_px(conf->items[i].width, constraints.x),
-      .y = unit_length_in_px(conf->items[i].height, constraints.y),
+      .x = unit_length_in_px(conf->children.elements[i].width, constraints.x),
+      .y = unit_length_in_px(conf->children.elements[i].height, constraints.y),
     };
-    child_draws[i] = widget_draw_deferred(app, child_target_sizes[i], conf->items[i].widget);
+    child_draws[i] = widget_draw_deferred(app, child_target_sizes[i], conf->children.elements[i].widget);
 
     total_widget_width += child_draws[i].dimensions.x;
-    if (i < conf->item_count - 1) total_widget_width += conf->spacing;
+    if (i < conf->children.count - 1) total_widget_width += conf->spacing;
     if (current_alignment == align_center)
       center_widget_width += child_draws[i].dimensions.x + conf->spacing;
 
@@ -49,10 +49,10 @@ point_t row(AppContext *app, point_t constraints, row_t *conf) {
   current_alignment = align_start;
   double remaining_widget_width = total_widget_width;
 
-  for (int i = 0; i < conf->item_count; i++) {
+  for (int i = 0; i < conf->children.count; i++) {
     // Alignment push along
-    if (conf->items[i].x_align > current_alignment) {
-      current_alignment = conf->items[i].x_align;
+    if (conf->children.elements[i].x_align > current_alignment) {
+      current_alignment = conf->children.elements[i].x_align;
       if (current_alignment == align_center) {
         double center_start = (total_width - center_widget_width) / 2;
         if (current_width < center_start) {
@@ -68,9 +68,9 @@ point_t row(AppContext *app, point_t constraints, row_t *conf) {
       .x = current_width,
       .y = 0, // align_start
     };
-    if (conf->items[i].y_align == align_center) {
+    if (conf->children.elements[i].y_align == align_center) {
       topleft.y = (max_height - child_draws[i].dimensions.y) / 2;
-    } else if (conf->items[i].y_align == align_end) {
+    } else if (conf->children.elements[i].y_align == align_end) {
       topleft.y = max_height - child_draws[i].dimensions.y;
     }
 
@@ -81,7 +81,7 @@ point_t row(AppContext *app, point_t constraints, row_t *conf) {
     current_width          += childsize.x;
     remaining_widget_width -= childsize.x;
 
-    if (i < conf->item_count - 1) {
+    if (i < conf->children.count - 1) {
       current_width          += conf->spacing;
       remaining_widget_width -= conf->spacing;
     }

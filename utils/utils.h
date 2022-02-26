@@ -102,7 +102,7 @@ inline void clamp_float(float *target, float min, float max) {
   else if (*target > max) *target = max;
 }
 
-// Clamp a float value to a given range
+// Clamp an int value to a given range
 inline void clamp_int(int *target, int min, int max) {
   if (*target < min) *target = min;
   else if (*target > max) *target = max;

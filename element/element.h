@@ -32,9 +32,13 @@ typedef struct {
 } element_t;
 
 typedef struct {
-  float spacing;
-  int item_count;
-  element_t *items;
+  size_t     count;
+  element_t *elements;
+} element_children_t;
+
+typedef struct {
+  float              spacing;
+  element_children_t children;
 } row_t;
 
 typedef row_t column_t;
@@ -42,5 +46,12 @@ typedef row_t column_t;
 point_t row(AppContext *app, point_t constraints, row_t *conf);
 point_t column(AppContext *app, point_t constraints, column_t *conf);
 
+#define element_children(...) \
+  (element_children_t){ \
+    .count = (sizeof((element_t[]){ __VA_ARGS__ })/sizeof(element_t)), \
+    .elements = (element_t[]) { \
+      __VA_ARGS__ \
+    } \
+  } \
 
 #endif

@@ -42,9 +42,11 @@ point_t paragraph(AppContext *app, point_t constraints, paragraph_t *conf) {
   }
 
   return column(app, constraints, &(row_t){
-    .spacing = conf->spacing,
-    .item_count = row_count,
-    .items = text_elements,
+    .spacing  = conf->spacing,
+    .children = (element_children_t){
+      .count    = row_count,
+      .elements = text_elements,
+    }
   });
 }
 
