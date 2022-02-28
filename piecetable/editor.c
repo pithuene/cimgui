@@ -18,9 +18,18 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
       ? data->ed->original
       : data->ed->added;
     for (int i = 0; i < curr_piece->length; i++) {
+      // TODO: Hack until proper cursor rendering is implemented
+      if (curr_piece == data->ed->cursor.piece
+        && i == data->ed->cursor.offset) {
+         *encoding_ptr = '|';
+         encoding_ptr++;
+         // Doesnt work!!
+      }
       const int index = curr_piece->start + i;
       rune_encode(&encoding_ptr, source[index]);
+
     }
+
     curr_piece = curr_piece->next;
   }
 
@@ -45,6 +54,20 @@ widget_draw_t draw_function_for_type(blocktype_t type) {
 }
 
 point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
+  eventqueue_foreach(InputEvent event, app->eventqueue) {
+    if (event.type == eventtype_key) {
+      KeyEvent keyevent = event.instance.key;
+      if (keyevent.action == ButtonActionPress || keyevent.action == ButtonActionRepeat) {
+        printf("Key pressed: %d\n", keyevent.key);
+        if (keyevent.key == GLFW_KEY_LEFT) {
+          editor_move_cursor_backward(ed, &ed->cursor, 1);
+        } else if (keyevent.key == GLFW_KEY_RIGHT) {
+          editor_move_cursor_forward(ed, &ed->cursor, 1);
+        }
+      }
+    }
+  }
+
   int block_count = editor_block_count(ed);
 
   element_t block_elements[block_count];

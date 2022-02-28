@@ -40,14 +40,24 @@ typedef struct {
 } block_paragraph_t;
 
 typedef struct {
+  piecetable_piece_t *piece;
+  uint32_t            offset;
+} editor_cursor_t;
+
+typedef struct {
   rune_t       *original;
   vec_t(rune_t) added;
   block_t *first;
   block_t *last;
+  editor_cursor_t cursor;
 } editor_t;
 
 editor_t editor_create(char *initial_content_string);
 // How many blocks are there in the document
 int editor_block_count(editor_t *ed);
+// Move a cursor forward a given distance
+void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor, int distance);
+// Move a cursor backward a given distance
+void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor, int distance);
 
 #endif

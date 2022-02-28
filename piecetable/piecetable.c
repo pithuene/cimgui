@@ -27,7 +27,26 @@ editor_t editor_create(char *initial_content_string) {
     .added = vec(rune_t, 64),
     .first = (block_t*) original_block,
     .last  = (block_t*) original_block,
+    .cursor = (editor_cursor_t){
+      .piece  = original_piece,
+      .offset = 0,
+    },
   };
+}
+
+
+void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor, int distance) {
+  if (cursor->offset < cursor->piece->length - 1) {
+    cursor->offset++;
+  }
+  //TODO
+}
+
+void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor, int distance) {
+  if (cursor->offset > 1) {
+    cursor->offset--;
+  }
+  //TODO
 }
 
 int editor_block_count(editor_t *ed) {
