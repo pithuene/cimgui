@@ -17,7 +17,7 @@ int main(void) {
   int encoding_length = runes_encoding_length(runes, rune_count);
   char encoded[encoding_length + 1];
   for(int i = 0; i < encoding_length; i++) encoded[i] = '\0';
-  char *encoding_ptr = (char*) &encoded;
+  char *encoding_ptr = (char*) encoded;
   for(int i = 0; i < rune_count; i++) {
     rune_encode(&encoding_ptr, runes[i]);
   }

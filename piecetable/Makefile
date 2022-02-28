@@ -6,7 +6,7 @@ RES  := piecetable.a
 all: $(RES)
 
 %.o: %.c
-	$(CC) $(PARENT_CFLAGS) -c $< -o $@
+	$(CC) $(PARENT_CFLAGS) -fPIC -c $< -o $@
 
 $(RES): $(OBJS)
 	ar cr $(RES) $(OBJS)

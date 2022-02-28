@@ -2,6 +2,7 @@
 #include "checktag/checktag.h"
 #include "element/element.h"
 #include "main.h"
+#include "piecetable/editor.h"
 #include <stdio.h>
 
 point_t sidebar(AppContext *app, point_t constraints, void *conf) {
@@ -24,12 +25,14 @@ point_t sidebar(AppContext *app, point_t constraints, void *conf) {
   return constraints;
 }
 
+
+
 point_t editingarea(AppContext *app, point_t constraints, void *conf) {
   rect(app, constraints, &(rect_t){(color_t){255,255,255,255}});
 
   char *content = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
 
-  static int spacing = 0;
+  static int spacing = 6;
   with_offset(&app->oplist, (point_t){300,50}) {
     slider(app, (point_t){0}, &(slider_t){
       .font = &app->font_fallback,
@@ -40,7 +43,7 @@ point_t editingarea(AppContext *app, point_t constraints, void *conf) {
     });
   }
 
-  static int font_size = 10;
+  static int font_size = 12;
   with_offset(&app->oplist, (point_t){600,50}) {
     slider(app, (point_t){0}, &(slider_t){
       .font = &app->font_fallback,
@@ -50,6 +53,12 @@ point_t editingarea(AppContext *app, point_t constraints, void *conf) {
       .value = &font_size,
     });
   }
+
+  if (!editor_state) {
+    editor_state = malloc(sizeof(editor_t));
+    *editor_state = editor_create("Some initial content and here is some more");
+  }
+
 
   with_offset(&app->oplist, (point_t){300,100}) {
     column(app, (point_t){.x = 500}, &(column_t){
@@ -72,6 +81,12 @@ point_t editingarea(AppContext *app, point_t constraints, void *conf) {
           .widget = widget(rect, &(rect_t){
             .color = (color_t){0,0,255,128},
           })
+        },
+        {
+          .width = {100, unit_percent},
+          .height = {300, unit_px},
+          .x_align = align_center,
+          .widget = widget(editor, editor_state),
         },
       ),
     });

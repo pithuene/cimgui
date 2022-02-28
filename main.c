@@ -9,6 +9,8 @@
 #include "checktag/checktag.h"
 #include "main.h"
 
+editor_t *editor_state;
+
 int main(void) {
   AppContext *app = application_create();
 

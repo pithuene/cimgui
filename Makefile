@@ -17,6 +17,7 @@ clean:
 	make -C widgets clean
 	make -C element clean
 	make -C checktag clean
+	make -C piecetable clean
 	rm -f nanovg.o
 	rm -f main
 	rm -f render.so

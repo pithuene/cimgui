@@ -5,16 +5,16 @@ const rune_t RUNE_REPLACEMENT = 0xEFBFBD00;
 // Return the bytelength of the codepoint starting with first_byte.
 // Returns -1 for invalid values.
 int rune_length(char first_byte) {
-  if ((first_byte & 0b10000000) == 0b00000000) {
+  if ((first_byte & 0x80) == 0x00) {
     return 1;
   }
-  if ((first_byte & 0b11100000) == 0b11000000) {
+  if ((first_byte & 0xE0) == 0xC0) {
     return 2;
   }
-  if ((first_byte & 0b11110000) == 0b11100000) {
+  if ((first_byte & 0xF0) == 0xE0) {
     return 3;
   }
-  if ((first_byte & 0b11111000) == 0b11110000) {
+  if ((first_byte & 0xF8) == 0xF0) {
     return 4;
   }
   return -1;

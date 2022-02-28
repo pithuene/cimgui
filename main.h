@@ -4,6 +4,7 @@
 #include "font/font.h"
 #include "widgets/widgets.h"
 #include "application.h"
+#include "piecetable/piecetable.h"
 
 typedef struct {
   Font fontNormal;
@@ -12,5 +13,7 @@ typedef struct {
   int fontSize;
   button_t btns[3];
 } State;
+
+extern editor_t *editor_state;
 
 #endif
