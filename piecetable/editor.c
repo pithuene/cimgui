@@ -62,6 +62,8 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           editor_move_cursor_backward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {
           editor_move_cursor_forward(ed, &ed->cursor);
+        } else if (keyevent.key == GLFW_KEY_SPACE) {
+          editor_insert_before(ed, &ed->cursor, 0xEFBFBD00);
         }
       }
     }
