@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "../ds/ds/vec.h"
 
+// TODO: Move rune handling out of piecetable
 // A unicode codepoint
 typedef uint32_t rune_t;
 

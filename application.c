@@ -48,8 +48,8 @@ static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action
 }
 
 static void char_callback(GLFWwindow* glWindow, rune_t rune) {
-  //AppContext * context = glfwGetWindowUserPointer(glWindow);
-  //eventqueue_enqueue(&context->eventqueue, key_event(key, scancode, action, mods));
+  AppContext * context = glfwGetWindowUserPointer(glWindow);
+  eventqueue_enqueue(&context->eventqueue, char_event(rune));
 }
 
 void cursorpos_callback(GLFWwindow* window, double x, double y) {

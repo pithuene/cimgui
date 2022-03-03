@@ -55,6 +55,10 @@ widget_draw_t draw_function_for_type(blocktype_t type) {
 
 point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
   eventqueue_foreach(InputEvent event, app->eventqueue) {
+    if (event.type == eventtype_char) {
+      CharEvent charevent = event.instance.character;
+      editor_insert_before(ed, &ed->cursor, charevent.rune);
+    }
     if (event.type == eventtype_key) {
       KeyEvent keyevent = event.instance.key;
       if (keyevent.action == ButtonActionPress || keyevent.action == ButtonActionRepeat) {
@@ -62,8 +66,6 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           editor_move_cursor_backward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {
           editor_move_cursor_forward(ed, &ed->cursor);
-        } else if (keyevent.key == GLFW_KEY_SPACE) {
-          editor_insert_before(ed, &ed->cursor, 0xEFBFBD00);
         }
       }
     }

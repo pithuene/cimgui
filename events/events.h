@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "../utils/utils.h"
 #include "../ds/mem/arenaalloc.h"
+#include "../piecetable/piecetable.h"
 
 // TODO: Rename InputEvent to just Event as this system is now used for non-input events
 // TODO: Change MyType naming to my_type_t
@@ -36,13 +37,13 @@ typedef struct {
   int          mods;
 } KeyEvent;
 
-/*typedef struct {
-  uint32_t codepoint;
-} CharEvent;*/
+typedef struct {
+  rune_t rune;
+} CharEvent;
 
 typedef struct {
-  uint32_t codepoint;
-  int      mods;
+  rune_t rune;
+  int    mods;
 } CharModsEvent;
 
 typedef struct {
@@ -79,6 +80,7 @@ typedef struct {
 typedef enum {
   eventtype_nop,
   eventtype_key,
+  eventtype_char,
   eventtype_charmods,
   eventtype_mousebuttonpress,
   eventtype_mousebuttonhelddown,
@@ -91,6 +93,7 @@ typedef struct {
   union {
     NopEvent nop;
     KeyEvent key;
+    CharEvent character;
     CharModsEvent charmods;
     MouseButtonPressEvent mousebuttonpress;
     MouseButtonHeldDownEvent mousebuttonhelddown;
@@ -102,6 +105,7 @@ typedef struct {
 // TODO: Naming?
 InputEvent nop_event(void);
 InputEvent key_event(int key, int scancode, ButtonAction action, int mods);
+InputEvent char_event(rune_t codepoint);
 InputEvent charmods_event(unsigned int codepoint, int mods);
 InputEvent mousebuttonpress_event(MouseButton button, point_t cursor, int mods);
 InputEvent mousebuttonhelddown_event(MouseButtonPressEvent press, MouseButton button, point_t cursor, int mods);
