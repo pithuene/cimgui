@@ -31,15 +31,17 @@ typedef struct block_t {
   // Blocks form a doubly linked list
   struct block_t *next;
   struct block_t *prev;
+  // The piecetable pieces contained in this block
+  piecetable_piece_t *first_piece;
+  piecetable_piece_t *last_piece;
 } block_t;
 
 typedef struct {
   block_t block;
-  piecetable_piece_t *first;
-  piecetable_piece_t *last;
 } block_paragraph_t;
 
 typedef struct {
+  block_t            *block;
   piecetable_piece_t *piece;
   uint32_t            offset;
 } editor_cursor_t;
@@ -56,8 +58,8 @@ editor_t editor_create(char *initial_content_string);
 // How many blocks are there in the document
 int editor_block_count(editor_t *ed);
 // Move a cursor forward a given distance
-void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor, int distance);
+void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor);
 // Move a cursor backward a given distance
-void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor, int distance);
+void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor);
 
 #endif

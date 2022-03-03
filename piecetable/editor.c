@@ -12,7 +12,7 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
   block_paragraph_t *pgraph = (block_paragraph_t*) data->block;
   char buffer[1024] = {0}; // TODO: If there is over 1k of text in a block, this will fail
   char *encoding_ptr = (char*) buffer;
-  piecetable_piece_t *curr_piece = pgraph->first;
+  piecetable_piece_t *curr_piece = pgraph->block.first_piece;
   while (curr_piece) {
     rune_t *source = (curr_piece->from_original)
       ? data->ed->original
@@ -59,9 +59,9 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
       KeyEvent keyevent = event.instance.key;
       if (keyevent.action == ButtonActionPress || keyevent.action == ButtonActionRepeat) {
         if (keyevent.key == GLFW_KEY_LEFT) {
-          editor_move_cursor_backward(ed, &ed->cursor, 1);
+          editor_move_cursor_backward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {
-          editor_move_cursor_forward(ed, &ed->cursor, 1);
+          editor_move_cursor_forward(ed, &ed->cursor);
         }
       }
     }

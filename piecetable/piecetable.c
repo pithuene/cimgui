@@ -17,9 +17,11 @@ editor_t editor_create(char *initial_content_string) {
 
   block_paragraph_t *original_block = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
   *original_block = (block_paragraph_t){
-    .block.type = blocktype_paragraph,
-    .first = original_piece,
-    .last = original_piece,
+    .block = {
+      .type = blocktype_paragraph,
+      .first_piece = original_piece,
+      .last_piece = original_piece,
+    }
   };
 
   return (editor_t){
@@ -28,25 +30,55 @@ editor_t editor_create(char *initial_content_string) {
     .first = (block_t*) original_block,
     .last  = (block_t*) original_block,
     .cursor = (editor_cursor_t){
-      .piece  = original_piece,
+      .block = (block_t *) original_block,
+      .piece = original_piece,
       .offset = 0,
     },
   };
 }
 
-
-void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor, int distance) {
-  if (cursor->offset < cursor->piece->length - 1) {
+void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor) {
+  if (cursor->offset < cursor->piece->length) {
+    // Shift offset in current piece
     cursor->offset++;
+    return;
   }
-  //TODO
+
+  if (cursor->piece->next) {
+    // Move to next piece
+    cursor->piece = cursor->piece->next;
+    cursor->offset = 0;
+    return;
+  }
+
+  if (cursor->block->next) {
+    // Move to next block
+    cursor->block = cursor->block->next;
+    cursor->piece = cursor->block->first_piece;
+    cursor->offset = 0;
+  }
 }
 
-void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor, int distance) {
-  if (cursor->offset > 1) {
+void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor) {
+  if (cursor->offset > 0) {
+    // Shift offset in current piece
     cursor->offset--;
+    return;
   }
-  //TODO
+
+  if (cursor->piece->prev) {
+    // Move to previous piece
+    cursor->piece = cursor->piece->prev;
+    cursor->offset = cursor->piece->length - 1;
+    return;
+  }
+
+  if (cursor->block->next) {
+    // Move to previous block
+    cursor->block = cursor->block->prev;
+    cursor->piece = cursor->block->last_piece;
+    cursor->offset = cursor->piece->length - 1; // TODO: Probably remove the -1 so the cursor sits *after* the block content
+  }
 }
 
 int editor_block_count(editor_t *ed) {
