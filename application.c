@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "widgets/widgets.h"
+#include "piecetable/piecetable.h"
 
 void errorcb(int error, const char* desc) {
 	printf("GLFW error %d: %s\n", error, desc);
@@ -46,6 +47,11 @@ static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action
 		glfwSetWindowShouldClose(glWindow, GL_TRUE);
 }
 
+static void char_callback(GLFWwindow* glWindow, rune_t rune) {
+  //AppContext * context = glfwGetWindowUserPointer(glWindow);
+  //eventqueue_enqueue(&context->eventqueue, key_event(key, scancode, action, mods));
+}
+
 void cursorpos_callback(GLFWwindow* window, double x, double y) {
   AppContext * context = glfwGetWindowUserPointer(window);
   eventqueue_enqueue(&context->eventqueue, nop_event());
@@ -63,7 +69,7 @@ void windowsize_callback(GLFWwindow* window, int width, int height) {
 
 void charmods_callback(GLFWwindow* window, unsigned int codepoint, int mods) {
   AppContext * context = glfwGetWindowUserPointer(window);
-  eventqueue_enqueue(&context->eventqueue, char_event(codepoint, mods));
+  eventqueue_enqueue(&context->eventqueue, charmods_event(codepoint, mods));
 }
 
 struct AppContext *application_create(void) {
@@ -125,6 +131,7 @@ struct AppContext *application_create(void) {
 
   /* Set callbacks */
 	glfwSetKeyCallback(state->glWindow, key_callback);
+  glfwSetCharCallback(state->glWindow, char_callback);
   glfwSetCharModsCallback(state->glWindow, charmods_callback);
   glfwSetMouseButtonCallback(state->glWindow, mousebutton_callback);
   glfwSetCursorPosCallback(state->glWindow, cursorpos_callback);

@@ -18,10 +18,10 @@ InputEvent key_event(int key, int scancode, ButtonAction action, int mods) {
   };
 }
 
-InputEvent char_event(unsigned int codepoint, int mods) {
+InputEvent charmods_event(unsigned int codepoint, int mods) {
   return (InputEvent){
-    .type = eventtype_char,
-    .instance.character = {
+    .type = eventtype_charmods,
+    .instance.charmods = {
       .codepoint = codepoint,
       .mods = mods,
     }
