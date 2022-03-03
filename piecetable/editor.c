@@ -58,7 +58,6 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
     if (event.type == eventtype_key) {
       KeyEvent keyevent = event.instance.key;
       if (keyevent.action == ButtonActionPress || keyevent.action == ButtonActionRepeat) {
-        printf("Key pressed: %d\n", keyevent.key);
         if (keyevent.key == GLFW_KEY_LEFT) {
           editor_move_cursor_backward(ed, &ed->cursor, 1);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {

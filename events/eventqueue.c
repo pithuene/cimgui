@@ -46,6 +46,20 @@ bool eventqueue_isempty(EventQueue *queue) {
   return queue->head == NULL;
 }
 
+bool eventqueue_noinput(EventQueue *queue) {
+  if (eventqueue_isempty(queue)) {
+    return true;
+  } else {
+    eventqueue_foreach(InputEvent event, *queue) {
+      if (event.type != eventtype_inputareamapping) {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
+
 void eventqueue_clear(EventQueue *queue) {
   queue->head = NULL;
   queue->tail = NULL;

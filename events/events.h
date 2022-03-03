@@ -133,6 +133,10 @@ InputEventResult eventqueue_dequeue(EventQueue *queue);
 
 bool eventqueue_isempty(EventQueue *queue);
 
+// Whether the eventqueue contains an input event.
+// Area mapping events should not trigger a redraw.
+bool eventqueue_noinput(EventQueue *queue);
+
 /* Remove all elements from the queue. Doesn't free the elements. */
 void eventqueue_clear(EventQueue *queue);
 

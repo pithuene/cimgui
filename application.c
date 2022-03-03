@@ -113,7 +113,6 @@ struct AppContext *application_create(void) {
 	glfwWindowHint(GLFW_SAMPLES, 4);
 #endif
 	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", NULL, NULL);
-//	state->glWindow = glfwCreateWindow(1000, 600, "NanoVG", glfwGetPrimaryMonitor(), NULL);
 
   // Make the AppContext available inside the glfw callbacks
   glfwSetWindowUserPointer(state->glWindow, state);
@@ -138,8 +137,6 @@ struct AppContext *application_create(void) {
 		printf("Could not init glew.\n");
 		exit(1);
 	}
-	// GLEW generates GL error because it calls glGetString(GL_EXTENSIONS), we'll consume it here.
-	glGetError();
 
 #ifdef DEMO_MSAA
 	state->vg = nvgCreateGL3(NVG_STENCIL_STROKES | NVG_DEBUG);
@@ -263,7 +260,7 @@ void application_loop(struct AppContext *context, AppLoopFunction initial_draw, 
 		t = glfwGetTime();
 
     // Draw only if there are events to be handled or if the next frame is forced.
-    if (forceNextFrameDraw || !eventqueue_isempty(&context->eventqueue)) {
+    if (forceNextFrameDraw || !eventqueue_noinput(&context->eventqueue)) {
       glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
       glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
 
@@ -304,7 +301,7 @@ void application_loop(struct AppContext *context, AppLoopFunction initial_draw, 
       // and therefore its events are handled *after* the counter is displayed,
       // and you only draw when there are events, the counter won't change until
       // something else emits another event.
-      if (!eventqueue_isempty(&context->eventqueue)) {
+      if (!eventqueue_noinput(&context->eventqueue)) {
         // This frame was not forced. There were actual events to handle.
         // Force a redraw next frame.
         forceNextFrameDraw = true;
@@ -334,25 +331,13 @@ void application_loop(struct AppContext *context, AppLoopFunction initial_draw, 
       arena_allocator_reset(&context->ops_arena);
     }
 
-    /* Limit FPS */
-    double endTime = glfwGetTime();
-    double targetFrameTime = 1000000/60;
-    double frameTime = (endTime - t) * 1000000;
-    double sleepTime = targetFrameTime - frameTime;
-
-    // Drawing takes so long, that FPS is below target anyways.
-    // No sleep required.
-    if (sleepTime > 0) {
-      usleep(sleepTime);
-    }
-
     _MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
       context->_lastMouseButtonPresses[0],
       context->_lastMouseButtonPresses[1],
       context->_lastMouseButtonPresses[2],
     };
 
-		glfwPollEvents();
+    glfwWaitEventsTimeout(1.0/60.0);
 
     // Generate MouseButtonHeldDown events
     for (int8_t i = 0; i < 3; i++) {
