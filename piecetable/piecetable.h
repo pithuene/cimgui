@@ -64,5 +64,7 @@ void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor);
 void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor);
 // Insert a rune in front of a cursor
 void editor_insert_before(editor_t *ed, editor_cursor_t *cursor, rune_t rune);
+// Delete the rune before a cursor
+void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
 
 #endif

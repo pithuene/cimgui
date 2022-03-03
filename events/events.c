@@ -19,14 +19,13 @@ InputEvent key_event(int key, int scancode, ButtonAction action, int mods) {
   };
 }
 
-static rune_t codepoint_to_rune( const uint32_t codepoint ) {
+static rune_t codepoint_to_rune(const uint32_t codepoint) {
   rune_t rune = 0;
   // U+0000   U+007F    0xxxxxxx
   if( codepoint <= 0x007F ) {
     rune = codepoint << 24;
   }
   // U+0080   U+07FF    110xxxxx  10xxxxxx
-// U+0080   U+07FF         xxx  xxxxxxxx
   else if( codepoint <= 0x07FF ) {
     rune += (codepoint << 2) & 0x0000FF00;
     rune += (codepoint       & 0x000000FF);

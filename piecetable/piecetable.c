@@ -142,6 +142,59 @@ void editor_insert_before(editor_t *ed, editor_cursor_t *cursor, rune_t rune) {
 
 }
 
+// Garbage collection for pieces.
+// If the piece is empty, it is properly removed and freed.
+static void piece_gc(block_t *block, piecetable_piece_t *piece) {
+  if (!piece || piece->length > 0) return;
+
+  if (piece->prev) {
+    piece->prev->next = piece->next;
+  } else {
+    block->first_piece = piece->next;
+  }
+
+  if (piece->next) {
+    piece->next->prev = piece->prev;
+  } else {
+    block->last_piece = piece->prev;
+  }
+
+  /*
+  if (!block->first_piece) {
+    // Block is empty
+    // TODO
+  }
+  */
+  free(piece);
+}
+
+void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor) {
+  if (cursor->offset == 0) {
+    if (cursor->piece->prev) {
+      cursor->piece->prev->length--;
+      piece_gc(cursor->block, cursor->piece->prev);
+    }
+  } else if (cursor->offset == 1) {
+    cursor->piece->start++;
+    cursor->piece->length--;
+    cursor->offset = 0;
+    piece_gc(cursor->block, cursor->piece);
+  } else {
+    // Split
+    piecetable_piece_t *end_piece = insert_piece_after(
+      cursor->block,
+      cursor->piece,
+      cursor->piece->from_original,
+      cursor->offset,
+      cursor->piece->length - cursor->offset
+    );
+    cursor->piece->length = cursor->offset - 1;
+
+    cursor->piece = end_piece;
+    cursor->offset = 0;
+  }
+}
+
 void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor) {
   if (cursor->offset < cursor->piece->length - 1) {
     // Shift offset in current piece

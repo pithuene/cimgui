@@ -23,7 +23,6 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
         && i == data->ed->cursor.offset) {
          *encoding_ptr = '|';
          encoding_ptr++;
-         // Doesnt work!!
       }
       const int index = curr_piece->start + i;
       rune_encode(&encoding_ptr, source[index]);
@@ -66,6 +65,8 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           editor_move_cursor_backward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {
           editor_move_cursor_forward(ed, &ed->cursor);
+        } else if (keyevent.key == GLFW_KEY_BACKSPACE) {
+          editor_delete_backwards(ed, &ed->cursor);
         }
       }
     }
