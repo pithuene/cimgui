@@ -15,7 +15,8 @@ typedef struct {
   const char *content;
   const char *content_end;
   color_t     color;
-  char       *caret;
+  // The index of the caret in this row. Negativ if there is none.
+  int16_t     caret;
 } editable_row_t;
 
 point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf) {
@@ -31,22 +32,20 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
 
   op_text(&app->oplist, conf->size, font, conf->content, conf->content_end);
 
-  if (conf->content <= conf->caret && conf->caret <= conf->content_end) {
+  if (conf->caret >= 0) {
     // Caret is in this row
-    int caret_idx = conf->caret - conf->content;
-
-    glyph_position_t glyph_positions[caret_idx + 1];
+    glyph_position_t glyph_positions[conf->caret + 1];
     text_glyph_positions(
       app->vg,
       conf->size,
       font,
       conf->content,
-      conf->caret + 1,
+      conf->content + conf->caret + 1,
       glyph_positions,
-      caret_idx + 1
+      conf->caret + 1
     );
 
-    float caret_x_offset = glyph_positions[caret_idx].minx;
+    float caret_x_offset = glyph_positions[conf->caret].minx;
     with_offset(&app->oplist, (point_t){.x = caret_x_offset}) {
       rect(
         app,
@@ -68,7 +67,7 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
   block_paragraph_t *pgraph = (block_paragraph_t*) data->block;
   char buffer[1024] = {0}; // TODO: If there is over 1k of text in a block, this will fail
   char *encoding_ptr = (char*) buffer;
-  char *caret = buffer;
+  char *caret = NULL;
   piecetable_piece_t *curr_piece = pgraph->block.first_piece;
   while (curr_piece) {
     rune_t *source = (curr_piece->from_original)
@@ -95,7 +94,7 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
   int row_count = nvgTextBreakLines(
     app->vg,
     buffer,
-    NULL,
+    encoding_ptr,
     constraints.x,
     rows,
     max_rows
@@ -105,13 +104,22 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
 
   for (int j = 0; j < row_count; j++) {
     editable_row_t *text_element = arenaalloc(&app->ops_arena, sizeof(editable_row_t));
+    size_t content_length = rows[j].end - rows[j].start;
+    char *content = arenaalloc(&app->ops_arena, content_length);
+    strncpy(content, rows[j].start, content_length);
+
+    int16_t caret_idx = -1;
+    if (rows[j].start <= caret && caret <= rows[j].end) {
+      caret_idx = caret - rows[j].start;
+    }
+
     *text_element = (editable_row_t){
       .color = (color_t){0,0,0,255},
-      .content = rows[j].start,
-      .content_end = rows[j].end,
+      .content = content,
+      .content_end = content + content_length,
       .font = &app->font_fallback,
       .size = 12,
-      .caret = caret,
+      .caret = caret_idx,
     };
 
     widget_t *widget = arenaalloc(&app->ops_arena, sizeof(widget_t));
@@ -158,9 +166,20 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
         } else if (keyevent.key == GLFW_KEY_BACKSPACE) {
           editor_delete_backwards(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_ENTER) {
-          rune_t newline = '\n';
-          newline <<= 24;
-          editor_insert_before(ed, &ed->cursor, newline);
+          if (keyevent.mods & GLFW_MOD_SHIFT) {
+            rune_t newline = '\n';
+            newline <<= 24;
+            editor_insert_before(ed, &ed->cursor, newline);
+          } else {
+            block_t *new_paragraph = (block_t *) editor_create_block_paragraph(ed);
+            editor_insert_block_after(ed, ed->cursor.block, new_paragraph);
+            ed->cursor = (editor_cursor_t){
+              .block = new_paragraph,
+              .piece = new_paragraph->first_piece,
+              .offset = 0,
+            };
+            // TODO: The created paragraph should not be empty. The cursor block should be split instead.
+          }
         }
       }
     }
@@ -188,6 +207,7 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
       .widget = block_widget,
     };
     curr_block = curr_block->next;
+    block_index++;
   }
 
   column(app, constraints, &(column_t){

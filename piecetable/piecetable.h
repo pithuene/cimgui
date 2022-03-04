@@ -66,5 +66,9 @@ void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor);
 void editor_insert_before(editor_t *ed, editor_cursor_t *cursor, rune_t rune);
 // Delete the rune before a cursor
 void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
+// Insert new_block after a given block
+void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block);
+// Create a new paragraph block. The block must still be linked into the list.
+block_paragraph_t *editor_create_block_paragraph(editor_t *ed);
 
 #endif

@@ -231,7 +231,7 @@ void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor) {
     return;
   }
 
-  if (cursor->block->next) {
+  if (cursor->block->prev) {
     // Move to previous block
     cursor->block = cursor->block->prev;
     cursor->piece = cursor->block->last_piece;
@@ -257,43 +257,53 @@ editor_t editor_create(char *initial_content_string) {
     original[i] = rune_decode(&decoding_ptr);
   }
 
-  piecetable_piece_t *original_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
-  *original_piece = (piecetable_piece_t){
-    .from_original = true,
-    .length = (uint32_t) rune_count,
-    .start = 0,
-  };
-
-  block_paragraph_t *original_block = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
-  *original_block = (block_paragraph_t){
-    .block = {
-      .type = blocktype_paragraph,
-      .first_piece = original_piece,
-      .last_piece = original_piece,
-    }
-  };
-
   editor_t editor = {
     .original = original,
     .added = vec(rune_t, 64),
-    .first = (block_t*) original_block,
-    .last  = (block_t*) original_block,
-    .cursor = (editor_cursor_t){
-      .block = (block_t *) original_block,
-      .piece = original_piece,
-      .offset = 0,
-    },
   };
 
-  char *more_content = "Another piece with some more content";
-  uint32_t start = veclen(editor.added);
-  rune_count = runes_decoding_length(more_content);
-  decoding_ptr = more_content;
-  for(int i = 0; i < rune_count; i++) {
-    append_rune(&editor, rune_decode(&decoding_ptr));
-  }
+  block_t *original_block = (block_t*) editor_create_block_paragraph(&editor);
+  editor.first = original_block;
+  editor.last = original_block;
 
-  insert_piece_before((block_t *) original_block, original_piece, false, start, rune_count);
+  piecetable_piece_t *original_piece = insert_piece_before((block_t *) original_block, original_block->first_piece, true, 0, rune_count);
+
+  editor.cursor = (editor_cursor_t){
+    .block = original_block,
+    .piece = original_piece,
+    .offset = 0,
+  };
 
   return editor;
+}
+
+block_paragraph_t *editor_create_block_paragraph(editor_t *ed) {
+  piecetable_piece_t *newline_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
+  *newline_piece = (piecetable_piece_t){
+    .from_original = false,
+    .length = 1,
+    .start = veclen(ed->added),
+  };
+  append_rune(ed, '\0' << 24);
+
+  block_paragraph_t *new_paragraph = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
+  *new_paragraph = (block_paragraph_t){
+    .block = {
+      .type = blocktype_paragraph,
+      .first_piece = newline_piece,
+      .last_piece = newline_piece,
+    }
+  };
+  return new_paragraph;
+}
+
+void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block) {
+  if (after->next) {
+    after->next->prev = new_block;
+    new_block->next = after->next;
+  } else {
+    ed->last = new_block;
+  }
+  after->next = new_block;
+  new_block->prev = after;
 }
