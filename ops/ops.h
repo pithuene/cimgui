@@ -120,6 +120,15 @@ void op_register_input_area(oplist_t *oplist, point_t dimensions, uint64_t area_
 
 point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, const char *end);
 
+typedef struct {
+	const char *str;
+	float x;
+	float minx;
+  float maxx;
+} glyph_position_t;
+
+int text_glyph_positions(NVGcontext *vg, float size, Font *font, const char *string, const char *end, glyph_position_t *positions, int max_positions);
+
 #define with_offset(OPLIST, ...) for (         \
   int _defer_i ##__LINE__ = (op_offset((OPLIST), (__VA_ARGS__)), 0); \
   !_defer_i ## __LINE__;                \

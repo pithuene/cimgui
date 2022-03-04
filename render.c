@@ -25,72 +25,25 @@ point_t sidebar(AppContext *app, point_t constraints, void *conf) {
   return constraints;
 }
 
-
-
 point_t editingarea(AppContext *app, point_t constraints, void *conf) {
   rect(app, constraints, &(rect_t){(color_t){255,255,255,255}});
-
-  char *content = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.";
-
-  static int spacing = 6;
-  with_offset(&app->oplist, (point_t){300,50}) {
-    slider(app, (point_t){0}, &(slider_t){
-      .font = &app->font_fallback,
-      .min = 0,
-      .max = 100,
-      .step = 1,
-      .value = &spacing,
-    });
-  }
-
-  static int font_size = 12;
-  with_offset(&app->oplist, (point_t){600,50}) {
-    slider(app, (point_t){0}, &(slider_t){
-      .font = &app->font_fallback,
-      .min = 0,
-      .max = 100,
-      .step = 1,
-      .value = &font_size,
-    });
-  }
 
   if (!editor_state) {
     editor_state = malloc(sizeof(editor_t));
     *editor_state = editor_create("Some initial content and here is some more");
   }
 
-
-  with_offset(&app->oplist, (point_t){300,100}) {
-    column(app, (point_t){.x = 500}, &(column_t){
-      .children = element_children(
-        {
-          .width = {100, unit_percent},
-          .widget = widget(paragraph, &(paragraph_t){
-            .color = (color_t){0,0,255,255},
-            .content = content,
-            .font = &app->font_fallback,
-            .max_rows = 10,
-            .size = font_size,
-            .spacing = spacing,
-          }),
-        },
-        {
-          .width = {100, unit_percent},
-          .height = {100, unit_px},
-          .x_align = align_center,
-          .widget = widget(rect, &(rect_t){
-            .color = (color_t){0,0,255,128},
-          })
-        },
-        {
-          .width = {100, unit_percent},
-          .height = {300, unit_px},
-          .x_align = align_center,
-          .widget = widget(editor, editor_state),
-        },
-      ),
-    });
+  with_offset(&app->oplist, (point_t){unit_length_in_px((unit_length_t){25, unit_percent}, constraints.x),100}) {
+    editor(
+      app,
+      (point_t){
+        .x = unit_length_in_px((unit_length_t){50, unit_percent}, constraints.x),
+        .y = constraints.y,
+      },
+      editor_state
+    );
   }
+
   return constraints;
 }
 

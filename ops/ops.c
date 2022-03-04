@@ -151,3 +151,10 @@ point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, 
     .y = size,
   };
 }
+
+int text_glyph_positions(NVGcontext *vg, float size, Font *font, const char *string, const char *end, glyph_position_t *positions, int max_positions) {
+  nvgFontSize(vg, size/font->heightFactor);
+  nvgFontFaceId(vg, font->handle);
+  nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+  return nvgTextGlyphPositions(vg, 0, 0, string, end, (NVGglyphPosition*) positions, max_positions);
+}

@@ -2,43 +2,133 @@
 #include "editor.h"
 #include "../widgets/widgets.h"
 #include "../element/element.h"
+#include "../ops/ops.h"
 
 typedef struct {
   editor_t *ed;
   block_t  *block;
 } block_draw_data_t;
 
+typedef struct {
+  Font       *font;
+  float       size;
+  const char *content;
+  const char *content_end;
+  color_t     color;
+  char       *caret;
+} editable_row_t;
+
+point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf) {
+  op_begin_path(&app->oplist);
+  op_fill_color(&app->oplist, conf->color);
+
+  Font *font = conf->font;
+  if (!font) {
+    font = &app->font_fallback;
+  }
+
+  point_t bounds = text_bounds(app->vg, conf->size, font, conf->content, conf->content_end);
+
+  op_text(&app->oplist, conf->size, font, conf->content, conf->content_end);
+
+  if (conf->content <= conf->caret && conf->caret <= conf->content_end) {
+    // Caret is in this row
+    int caret_idx = conf->caret - conf->content;
+
+    glyph_position_t glyph_positions[caret_idx + 1];
+    text_glyph_positions(
+      app->vg,
+      conf->size,
+      font,
+      conf->content,
+      conf->caret + 1,
+      glyph_positions,
+      caret_idx + 1
+    );
+
+    float caret_x_offset = glyph_positions[caret_idx].minx;
+    with_offset(&app->oplist, (point_t){.x = caret_x_offset}) {
+      rect(
+        app,
+        (point_t){
+          .x = 1,
+          .y = conf->size*1.5
+        },
+        &(rect_t){
+          .color = (color_t){0,0,0,255}
+        }
+      );
+    }
+  }
+
+  return bounds;
+}
+
 point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* data) {
   block_paragraph_t *pgraph = (block_paragraph_t*) data->block;
   char buffer[1024] = {0}; // TODO: If there is over 1k of text in a block, this will fail
   char *encoding_ptr = (char*) buffer;
+  char *caret = buffer;
   piecetable_piece_t *curr_piece = pgraph->block.first_piece;
   while (curr_piece) {
     rune_t *source = (curr_piece->from_original)
       ? data->ed->original
       : data->ed->added;
     for (int i = 0; i < curr_piece->length; i++) {
-      // TODO: Hack until proper cursor rendering is implemented
       if (curr_piece == data->ed->cursor.piece
         && i == data->ed->cursor.offset) {
-         *encoding_ptr = '|';
-         encoding_ptr++;
+        caret = encoding_ptr;
       }
       const int index = curr_piece->start + i;
       rune_encode(&encoding_ptr, source[index]);
-
     }
 
     curr_piece = curr_piece->next;
   }
 
-  return paragraph(app, constraints, &(paragraph_t){
-    .color = (color_t){0,0,0,255},
-    .content = buffer,
-    .font = &app->font_fallback,
-    .max_rows = 10, // TODO: Das wird noch problematisch
-    .size = 12,
-    .spacing = 6,
+  const int max_rows = 20;
+
+	NVGtextRow rows[max_rows];
+  nvgFontSize(app->vg, 12 / app->font_fallback.heightFactor);
+  nvgFontFaceId(app->vg, app->font_fallback.handle);
+	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+  int row_count = nvgTextBreakLines(
+    app->vg,
+    buffer,
+    NULL,
+    constraints.x,
+    rows,
+    max_rows
+  );
+
+  element_t text_elements[row_count];
+
+  for (int j = 0; j < row_count; j++) {
+    editable_row_t *text_element = arenaalloc(&app->ops_arena, sizeof(editable_row_t));
+    *text_element = (editable_row_t){
+      .color = (color_t){0,0,0,255},
+      .content = rows[j].start,
+      .content_end = rows[j].end,
+      .font = &app->font_fallback,
+      .size = 12,
+      .caret = caret,
+    };
+
+    widget_t *widget = arenaalloc(&app->ops_arena, sizeof(widget_t));
+    *widget = (widget_t){
+        (widget_draw_t) editable_row,
+        text_element,
+    };
+
+    text_elements[j] = (element_t){.widget = widget};
+  }
+
+  return column(app, constraints, &(row_t){
+    .spacing  = 6,
+    .children = (element_children_t){
+      .count    = row_count,
+      .elements = text_elements,
+    }
   });
 }
 
@@ -67,6 +157,10 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           editor_move_cursor_forward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_BACKSPACE) {
           editor_delete_backwards(ed, &ed->cursor);
+        } else if (keyevent.key == GLFW_KEY_ENTER) {
+          rune_t newline = '\n';
+          newline <<= 24;
+          editor_insert_before(ed, &ed->cursor, newline);
         }
       }
     }
