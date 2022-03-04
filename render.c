@@ -51,13 +51,13 @@ point_t mainlayout(AppContext *app, point_t constraints, void *conf) {
   row(app, constraints, &(row_t){
     .spacing = 0,
     .children = element_children(
-      {
+      /*{
         .width = {15, unit_percent},
         .height = {100, unit_percent},
         .widget = widget(sidebar, NULL),
-      },
+      },*/
       {
-        .width = {85, unit_percent},
+        .width = {100, unit_percent},
         .height = {100, unit_percent},
         .widget = widget(editingarea, NULL),
       },

@@ -69,6 +69,8 @@ void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
 // Insert new_block after a given block
 void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block);
 // Create a new paragraph block. The block must still be linked into the list.
-block_paragraph_t *editor_create_block_paragraph(editor_t *ed);
+block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
+// Split a block into two at the cursor
+void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor);
 
 #endif

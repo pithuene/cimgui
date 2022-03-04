@@ -171,14 +171,7 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
             newline <<= 24;
             editor_insert_before(ed, &ed->cursor, newline);
           } else {
-            block_t *new_paragraph = (block_t *) editor_create_block_paragraph(ed);
-            editor_insert_block_after(ed, ed->cursor.block, new_paragraph);
-            ed->cursor = (editor_cursor_t){
-              .block = new_paragraph,
-              .piece = new_paragraph->first_piece,
-              .offset = 0,
-            };
-            // TODO: The created paragraph should not be empty. The cursor block should be split instead.
+            editor_split_block_at_cursor(ed, &ed->cursor);
           }
         }
       }

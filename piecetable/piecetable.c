@@ -12,6 +12,17 @@ static void append_text(editor_t *ed, rune_t *runes, int rune_count) {
   }
 }
 
+static piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
+  piecetable_piece_t *newline_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
+  *newline_piece = (piecetable_piece_t){
+    .from_original = false,
+    .length = 1,
+    .start = veclen(ed->added),
+  };
+  append_rune(ed, '\0' << 24);
+  return newline_piece;
+}
+
 // Insert a new piece after a given one inside a block.
 // Returns the new piece.
 static piecetable_piece_t *insert_piece_after(block_t *block, piecetable_piece_t *piece, bool from_original, uint32_t start, uint32_t length) {
@@ -262,7 +273,9 @@ editor_t editor_create(char *initial_content_string) {
     .added = vec(rune_t, 64),
   };
 
-  block_t *original_block = (block_t*) editor_create_block_paragraph(&editor);
+  piecetable_piece_t *block_terminator = create_new_blockterminator(&editor);
+
+  block_t *original_block = (block_t*) editor_create_block_paragraph(&editor, block_terminator, block_terminator);
   editor.first = original_block;
   editor.last = original_block;
 
@@ -277,21 +290,13 @@ editor_t editor_create(char *initial_content_string) {
   return editor;
 }
 
-block_paragraph_t *editor_create_block_paragraph(editor_t *ed) {
-  piecetable_piece_t *newline_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
-  *newline_piece = (piecetable_piece_t){
-    .from_original = false,
-    .length = 1,
-    .start = veclen(ed->added),
-  };
-  append_rune(ed, '\0' << 24);
-
+block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last) {
   block_paragraph_t *new_paragraph = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
   *new_paragraph = (block_paragraph_t){
     .block = {
       .type = blocktype_paragraph,
-      .first_piece = newline_piece,
-      .last_piece = newline_piece,
+      .first_piece = first,
+      .last_piece = last,
     }
   };
   return new_paragraph;
@@ -306,4 +311,56 @@ void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block)
   }
   after->next = new_block;
   new_block->prev = after;
+}
+
+// Split the piece under a cursor into two.
+// The piece is split at the character *before* the cursor.
+//
+// If the cursor is at the beginning of a piece, no split is performed, and first is set the previous piece.
+// Note that first can be set to NULL in this case.
+static void split_piece_at_cursor(editor_cursor_t *cursor, piecetable_piece_t **first, piecetable_piece_t **second) {
+  if (cursor->offset == 0) {
+    *second = cursor->piece;
+    *first = cursor->piece->prev;
+  }
+
+  int second_piece_length = cursor->piece->length - cursor->offset;
+  *first = cursor->piece;
+  (*first)->length = cursor->offset;
+  *second = insert_piece_after(
+    cursor->block,
+    cursor->piece,
+    cursor->piece->from_original,
+    cursor->piece->start + cursor->piece->length,
+    second_piece_length
+  );
+}
+
+void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
+  // TODO: The created block should usually be of the same type. To implement this I would need some sort of a "copy block of any type" mechanism or change how blocktypes are handled.
+  
+  // The last content piece that remains in the cursor block
+  piecetable_piece_t *first = NULL;
+  // The first piece of the new block 
+  piecetable_piece_t *second = NULL;
+
+  split_piece_at_cursor(cursor, &first, &second);
+
+  // Create and insert the new block
+  second->prev = NULL;
+  block_t *new_paragraph = (block_t *) editor_create_block_paragraph(ed, second, cursor->block->last_piece);
+  editor_insert_block_after(ed, cursor->block, new_paragraph);
+
+  // Append a new block_terminator to the first block and fix all links
+  piecetable_piece_t *first_blockterminator = create_new_blockterminator(ed);
+  first_blockterminator->prev = first;
+  cursor->block->last_piece = first_blockterminator;
+  first->next = first_blockterminator;
+
+  // Place cursor at beginning of new block
+  *cursor = (editor_cursor_t){
+    .block = new_paragraph,
+    .piece = second,
+    .offset = 0,
+  };
 }
