@@ -211,8 +211,7 @@ void block_append_pieces(editor_t *ed, block_t *block, piecetable_piece_t *first
   assert(first != NULL);
   assert(last != NULL);
 
-  bool was_removed = block_remove_terminator(ed, block);
-  printf("Was removed %s\n", (was_removed) ? "true" : "false");
+  block_remove_terminator(ed, block);
 
   first->prev = block->last_piece;
   if (block->last_piece) {
@@ -480,7 +479,12 @@ void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
   piecetable_piece_t *first_blockterminator = create_new_blockterminator(ed);
   first_blockterminator->prev = first;
   cursor->block->last_piece = first_blockterminator;
-  first->next = first_blockterminator;
+  if (first) {
+    first->next = first_blockterminator;
+  } else {
+    // Split occured at the beginning of a block
+    cursor->block->first_piece = first_blockterminator;
+  }
 
   // Place cursor at beginning of new block
   *cursor = (editor_cursor_t){
