@@ -1,4 +1,6 @@
 #include "piecetable.h"
+#include <assert.h>
+#include <stdio.h>
 
 // Append a single rune to the added buffer
 static void append_rune(editor_t *ed, rune_t rune) {
@@ -12,7 +14,14 @@ static void append_text(editor_t *ed, rune_t *runes, int rune_count) {
   }
 }
 
-static piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
+bool piece_is_blockterminator(editor_t *ed, piecetable_piece_t *piece) {
+  if (piece->from_original) return false;
+  if (piece->length != 1) return false;
+  if (ed->added[piece->start] != 0x000000) return false;
+  return true;
+}
+
+piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
   piecetable_piece_t *newline_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
   *newline_piece = (piecetable_piece_t){
     .from_original = false,
@@ -21,6 +30,23 @@ static piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
   };
   append_rune(ed, '\0' << 24);
   return newline_piece;
+}
+
+// Remove the blockterminator from a block if it has one.
+// Returns whether a terminator was removed.
+bool block_remove_terminator(editor_t *ed, block_t *block) {
+  if (block->last_piece && piece_is_blockterminator(ed, block->last_piece)) {
+    piecetable_piece_t *blockterminator = block->last_piece;
+    block->last_piece = blockterminator->prev;
+    if (blockterminator->prev) {
+      blockterminator->prev->next = NULL;
+    } else {
+      block->first_piece = NULL;
+    }
+    free(blockterminator);
+    return true;
+  }
+  return false;
 }
 
 // Insert a new piece after a given one inside a block.
@@ -179,11 +205,109 @@ static void piece_gc(block_t *block, piecetable_piece_t *piece) {
   free(piece);
 }
 
+// Append the pieces from first to last to the end of block.
+// Automatically removes and adds the correct block terminators as necessary.
+void block_append_pieces(editor_t *ed, block_t *block, piecetable_piece_t *first, piecetable_piece_t *last) {
+  assert(first != NULL);
+  assert(last != NULL);
+
+  bool was_removed = block_remove_terminator(ed, block);
+  printf("Was removed %s\n", (was_removed) ? "true" : "false");
+
+  first->prev = block->last_piece;
+  if (block->last_piece) {
+    block->last_piece->next = first;
+  }
+  if (!block->first_piece) {
+    block->first_piece = first;
+  }
+  block->last_piece = last;
+  last->next = NULL;
+  if (!piece_is_blockterminator(ed, last)) {
+    piecetable_piece_t *blockterminator = create_new_blockterminator(ed);
+    block->last_piece->next = blockterminator;
+    blockterminator->prev = block->last_piece;
+    block->last_piece = blockterminator;
+  }
+}
+
+// Delete a block from the editor.
+// Does not delete the pieces it contains!
+void editor_delete_block(editor_t *ed, block_t *block) {
+  if (block->prev) {
+    block->prev->next = block->next;
+  } else {
+    ed->first = block->next;
+  }
+
+  if (block->next) {
+    block->next->prev = block->prev;
+  } else {
+    ed->last = block->prev;
+  }
+
+  free(block);
+
+  // TODO: Check if editor is empty!
+}
+
+// Debugging only.
+// Check if the piece list inside a block is in a healthy state.
+// Check if the first_piece has no prev and the last piece has no next.
+void editor_block_check_health(block_t *block) {
+  if (!block) {
+    printf("Checking health of null block!\n");
+    return;
+  }
+  if (block->first_piece && !block->last_piece) {
+    printf("Checked block has a first piece but no last piece!\n");
+  }
+  if (block->last_piece && !block->first_piece) {
+    printf("Checked block has a last piece but no first piece!\n");
+  }
+  if (block->first_piece->prev != NULL) {
+    printf("First piece of checked block has a prev of %p!\n", (void *) block->first_piece->prev);
+  }
+  if (block->last_piece->next != NULL) {
+    printf("Last piece of checked block has a next of %p!\n", (void *) block->last_piece->next);
+  }
+
+  piecetable_piece_t *curr = block->first_piece;
+  while (curr) {
+    if (curr->next) {
+      if (curr->next->prev != curr) {
+        printf(
+          "Piece of editor block %p broken. next->prev points to %p instead of %p.\n",
+          (void*) block,
+          (void*) curr->next->prev,
+          (void*) curr
+        );
+      }
+    }
+    curr = curr->next;
+  }
+}
+
 void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor) {
   if (cursor->offset == 0) {
     if (cursor->piece->prev) {
       cursor->piece->prev->length--;
       piece_gc(cursor->block, cursor->piece->prev);
+    } else {
+      // Delete at the beginning of a block, append this blocks to the previous block
+      if (cursor->block->prev) {
+        // Only do this if this is not the first block
+        block_append_pieces(
+          ed,
+          cursor->block->prev,
+          cursor->block->first_piece,
+          cursor->block->last_piece
+        );
+
+        editor_delete_block(ed, cursor->block);
+
+        cursor->block = cursor->block->prev;
+      }
     }
   } else if (cursor->offset == 1) {
     cursor->piece->start++;
@@ -196,7 +320,7 @@ void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor) {
       cursor->block,
       cursor->piece,
       cursor->piece->from_original,
-      cursor->offset,
+      cursor->piece->start + cursor->offset,
       cursor->piece->length - cursor->offset
     );
     cursor->piece->length = cursor->offset - 1;
@@ -322,6 +446,7 @@ static void split_piece_at_cursor(editor_cursor_t *cursor, piecetable_piece_t **
   if (cursor->offset == 0) {
     *second = cursor->piece;
     *first = cursor->piece->prev;
+    return;
   }
 
   int second_piece_length = cursor->piece->length - cursor->offset;
