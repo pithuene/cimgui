@@ -4,16 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include "../font/utf8/utf8.h"
 #include "../ds/ds/vec.h"
-
-// TODO: Move rune handling out of piecetable
-// A unicode codepoint
-typedef uint32_t rune_t;
-
-rune_t rune_decode(char **input);
-void rune_encode(char **output, rune_t rune);
-int runes_encoding_length(rune_t *runes, int length);
-int runes_decoding_length(char *string);
 
 typedef struct piecetable_piece_t {
   uint32_t                   from_original : 1;
