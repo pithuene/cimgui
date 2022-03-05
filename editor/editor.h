@@ -2,7 +2,7 @@
 #define _EDITOR_H
 
 #include "../application.h"
-#include "piecetable.h"
+#include "../piecetable/piecetable.h"
 
 point_t editor(AppContext *app, point_t constraints, editor_t *pt);
 

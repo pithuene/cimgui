@@ -2,7 +2,7 @@
 #include "checktag/checktag.h"
 #include "element/element.h"
 #include "main.h"
-#include "piecetable/editor.h"
+#include "editor/editor.h"
 #include <stdio.h>
 
 point_t sidebar(AppContext *app, point_t constraints, void *conf) {

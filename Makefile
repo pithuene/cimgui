@@ -18,6 +18,7 @@ clean:
 	make -C element clean
 	make -C checktag clean
 	make -C piecetable clean
+	make -C editor clean
 	make -C ops clean
 	rm -f nanovg.o
 	rm -f main
@@ -50,12 +51,14 @@ checktag/checktag.a: force_look
 piecetable/piecetable.a: force_look
 	$(MAKE) -C piecetable PARENT_CFLAGS="$(CFLAGS)"
 
+editor/editor.a: force_look
+	$(MAKE) -C editor PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a piecetable/piecetable.a render.so
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c piecetable/piecetable.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 ) -ldl -rdynamic
+main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a piecetable/piecetable.a render.so
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3) -o main main.c application.c editor/editor.a piecetable/piecetable.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 ) -ldl -rdynamic
 
-render.so: render.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a piecetable/piecetable.a
-	cc $(CFLAGS) -shared -fPIC -o render.so render.c piecetable/piecetable.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a
+render.so: render.c events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a piecetable/piecetable.a
+	cc $(CFLAGS) -shared -fPIC -o render.so render.c editor/editor.a piecetable/piecetable.a events/events.a font/font.a element/element.a ops/ops.a widgets/widgets.a checktag/checktag.a
 
 force_look:
 	true
