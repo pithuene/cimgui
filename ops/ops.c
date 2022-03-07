@@ -158,3 +158,26 @@ int text_glyph_positions(NVGcontext *vg, float size, Font *font, const char *str
   nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   return nvgTextGlyphPositions(vg, 0, 0, string, end, (NVGglyphPosition*) positions, max_positions);
 }
+
+int text_break_lines(
+  NVGcontext *vg,
+  Font *font,
+  float font_size,
+  char *content,
+  char *content_end,
+  float line_width,
+  text_line_t* lines,
+  int max_rows
+) {
+  nvgFontSize(vg, font_size / font->heightFactor);
+  nvgFontFaceId(vg, font->handle);
+	nvgTextAlign(vg, NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+  return nvgTextBreakLines(
+    vg,
+    content,
+    content_end,
+    line_width,
+    (NVGtextRow *) lines,
+    max_rows
+  );
+}

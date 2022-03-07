@@ -129,6 +129,26 @@ typedef struct {
 
 int text_glyph_positions(NVGcontext *vg, float size, Font *font, const char *string, const char *end, glyph_position_t *positions, int max_positions);
 
+typedef struct {
+	const char* start;
+	const char* end;
+	const char* next_row;
+	float width;
+	float minx;
+  float maxx;
+} text_line_t;
+
+int text_break_lines(
+  NVGcontext *vg,
+  Font *font,
+  float font_size,
+  char *content,
+  char *content_end,
+  float line_width,
+  text_line_t* lines,
+  int max_rows
+);
+
 #define with_offset(OPLIST, ...) for (         \
   int _defer_i ##__LINE__ = (op_offset((OPLIST), (__VA_ARGS__)), 0); \
   !_defer_i ## __LINE__;                \

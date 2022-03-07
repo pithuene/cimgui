@@ -17,6 +17,7 @@ typedef struct piecetable_piece_t {
 
 typedef enum {
   blocktype_paragraph,
+  blocktype_heading,
 } blocktype_t;
 
 typedef struct block_t {
@@ -32,6 +33,11 @@ typedef struct block_t {
 typedef struct {
   block_t block;
 } block_paragraph_t;
+
+typedef struct {
+  block_t block;
+  uint8_t level;
+} block_heading_t;
 
 typedef struct {
   block_t            *block;
@@ -60,9 +66,12 @@ void editor_insert_before(editor_t *ed, editor_cursor_t *cursor, rune_t rune);
 void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
 // Insert new_block after a given block
 void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block);
-// Create a new paragraph block. The block must still be linked into the list.
-block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
 // Split a block into two at the cursor
 void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor);
+
+// Create a new paragraph block. The block must still be linked into the list.
+block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
+
+block_heading_t *editor_create_block_heading(editor_t *ed, uint8_t level, piecetable_piece_t *first, piecetable_piece_t *last);
 
 #endif

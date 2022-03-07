@@ -87,16 +87,16 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
 
   const int max_rows = 20;
 
-	NVGtextRow rows[max_rows];
-  nvgFontSize(app->vg, 12 / app->font_fallback.heightFactor);
-  nvgFontFaceId(app->vg, app->font_fallback.handle);
-	nvgTextAlign(app->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
-  int row_count = nvgTextBreakLines(
+  text_line_t lines[max_rows];
+
+  int row_count = text_break_lines(
     app->vg,
+    &app->font_fallback,
+    12,
     buffer,
     encoding_ptr,
     constraints.x,
-    rows,
+    lines,
     max_rows
   );
 
@@ -104,13 +104,13 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
 
   for (int j = 0; j < row_count; j++) {
     editable_row_t *text_element = arenaalloc(&app->ops_arena, sizeof(editable_row_t));
-    size_t content_length = rows[j].end - rows[j].start;
+    size_t content_length = lines[j].end - lines[j].start;
     char *content = arenaalloc(&app->ops_arena, content_length);
-    strncpy(content, rows[j].start, content_length);
+    strncpy(content, lines[j].start, content_length);
 
     int16_t caret_idx = -1;
-    if (rows[j].start <= caret && caret <= rows[j].end) {
-      caret_idx = caret - rows[j].start;
+    if (lines[j].start <= caret && caret <= lines[j].end) {
+      caret_idx = caret - lines[j].start;
     }
 
     *text_element = (editable_row_t){

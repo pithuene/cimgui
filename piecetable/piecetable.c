@@ -413,6 +413,19 @@ editor_t editor_create(char *initial_content_string) {
   return editor;
 }
 
+block_heading_t *editor_create_block_heading(editor_t *ed, uint8_t level, piecetable_piece_t *first, piecetable_piece_t *last) {
+  block_heading_t *new_heading = (block_heading_t*) malloc(sizeof(block_heading_t));
+  *new_heading = (block_heading_t){
+    .block = {
+      .type = blocktype_heading,
+      .first_piece = first,
+      .last_piece = last,
+    },
+    .level = level,
+  };
+  return new_heading;
+}
+
 block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last) {
   block_paragraph_t *new_paragraph = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
   *new_paragraph = (block_paragraph_t){
