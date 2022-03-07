@@ -21,7 +21,7 @@ bool piece_is_blockterminator(editor_t *ed, piecetable_piece_t *piece) {
   return true;
 }
 
-piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
+piecetable_piece_t *editor_create_new_blockterminator(editor_t *ed) {
   piecetable_piece_t *newline_piece = (piecetable_piece_t*) malloc(sizeof(piecetable_piece_t));
   *newline_piece = (piecetable_piece_t){
     .from_original = false,
@@ -37,7 +37,7 @@ piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
 // at which point there is no way to add content again.
 void editor_ensure_not_empty(editor_t *ed) {
   if (!ed->first) {
-    piecetable_piece_t *bt = create_new_blockterminator(ed);
+    piecetable_piece_t *bt = editor_create_new_blockterminator(ed);
     block_t *paragraph = (block_t *) editor_create_block_paragraph(ed, bt, bt);
     ed->first = paragraph;
     ed->last = paragraph;
@@ -241,7 +241,7 @@ void block_append_pieces(editor_t *ed, block_t *block, piecetable_piece_t *first
   block->last_piece = last;
   last->next = NULL;
   if (!piece_is_blockterminator(ed, last)) {
-    piecetable_piece_t *blockterminator = create_new_blockterminator(ed);
+    piecetable_piece_t *blockterminator = editor_create_new_blockterminator(ed);
     block->last_piece->next = blockterminator;
     blockterminator->prev = block->last_piece;
     block->last_piece = blockterminator;
@@ -463,7 +463,7 @@ editor_t editor_create(char *initial_content_string) {
     .added = vec(rune_t, 64),
   };
 
-  piecetable_piece_t *block_terminator = create_new_blockterminator(&editor);
+  piecetable_piece_t *block_terminator = editor_create_new_blockterminator(&editor);
 
   block_t *original_block = (block_t*) editor_create_block_paragraph(&editor, block_terminator, block_terminator);
   editor.first = original_block;
@@ -476,12 +476,6 @@ editor_t editor_create(char *initial_content_string) {
     .piece = original_piece,
     .offset = 0,
   };
-
-  piecetable_piece_t *bt = create_new_blockterminator(&editor);
-  block_t *heading = (block_t *) editor_create_block_heading(&editor, 1, bt, bt);
-  append_rune(&editor, 'a' << 24);
-  insert_piece_before(heading, bt, false, veclen(editor.added) - 1, 1);
-  editor_insert_block_after(&editor, editor.first, heading);
 
   return editor;
 }
@@ -562,7 +556,7 @@ void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
   editor_insert_block_after(ed, cursor->block, new_paragraph);
 
   // Append a new block_terminator to the first block and fix all links
-  piecetable_piece_t *first_blockterminator = create_new_blockterminator(ed);
+  piecetable_piece_t *first_blockterminator = editor_create_new_blockterminator(ed);
   first_blockterminator->prev = first;
   cursor->block->last_piece = first_blockterminator;
   if (first) {

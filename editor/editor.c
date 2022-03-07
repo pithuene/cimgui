@@ -164,18 +164,25 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
 point_t draw_heading(AppContext *app, point_t constraints, block_draw_data_t* data) {
   block_heading_t *heading = (block_heading_t *) data->block;
 
-  float font_size = 12;
+  float font_sizes[7] = {
+    48,
+    24,
+    20,
+    18,
+    16,
+    14,
+    12,
+  };
 
-  if (heading->level == 1) {
-    font_size = 48;
-  }
+  int level = heading->level - 1;
+  clamp_int(&level, 0, 6);
 
   return editable_text(app, constraints, &(editable_text_t){
     .color = (color_t){0,0,0,255},
     .ed = data->ed,
     .first_piece = data->block->first_piece,
     .font = &app->font_fallback,
-    .font_size = font_size,
+    .font_size = font_sizes[level],
     .cursor = data->ed->cursor,
   });
 }

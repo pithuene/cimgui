@@ -31,6 +31,15 @@ point_t editingarea(AppContext *app, point_t constraints, void *conf) {
   if (!editor_state) {
     editor_state = malloc(sizeof(editor_t));
     *editor_state = editor_create("Some initial content and here is some more");
+    editor_import_markdown(editor_state, " \
+# Headline\n \
+\n \
+Some text\n \
+\n \
+## Subheadline\n \
+\n \
+Even more content\n \
+      ");
   }
 
   with_offset(&app->oplist, (point_t){unit_length_in_px((unit_length_t){25, unit_percent}, constraints.x),100}) {
