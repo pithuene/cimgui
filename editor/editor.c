@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include "editor.h"
 #include "../widgets/widgets.h"
 #include "../element/element.h"
@@ -11,7 +12,7 @@ typedef struct {
 
 typedef struct {
   Font       *font;
-  float       size;
+  float       font_size;
   const char *content;
   const char *content_end;
   color_t     color;
@@ -28,16 +29,16 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
     font = &app->font_fallback;
   }
 
-  point_t bounds = text_bounds(app->vg, conf->size, font, conf->content, conf->content_end);
+  point_t bounds = text_bounds(app->vg, conf->font_size, font, conf->content, conf->content_end);
 
-  op_text(&app->oplist, conf->size, font, conf->content, conf->content_end);
+  op_text(&app->oplist, conf->font_size, font, conf->content, conf->content_end);
 
   if (conf->caret >= 0) {
     // Caret is in this row
     glyph_position_t glyph_positions[conf->caret + 1];
     text_glyph_positions(
       app->vg,
-      conf->size,
+      conf->font_size,
       font,
       conf->content,
       conf->content + conf->caret + 1,
@@ -51,7 +52,7 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
         app,
         (point_t){
           .x = 1,
-          .y = conf->size*1.5
+          .y = conf->font_size*1.5
         },
         &(rect_t){
           .color = (color_t){0,0,0,255}
@@ -63,21 +64,32 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
   return bounds;
 }
 
-point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* data) {
-  block_paragraph_t *pgraph = (block_paragraph_t*) data->block;
-  char buffer[1024] = {0}; // TODO: If there is over 1k of text in a block, this will fail
+typedef struct {
+  Font *font;
+  float font_size;
+  editor_t *ed;
+  piecetable_piece_t *first_piece;
+  color_t color;
+  editor_cursor_t cursor;
+} editable_text_t;
+
+point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
+  // TODO: If there is over 1k of text in a block, this will fail
+  #define BUFFER_LEN 1024
+  char buffer[BUFFER_LEN] = {0};
   char *encoding_ptr = (char*) buffer;
   char *caret = NULL;
-  piecetable_piece_t *curr_piece = pgraph->block.first_piece;
+  piecetable_piece_t *curr_piece = conf->first_piece;
   while (curr_piece) {
     rune_t *source = (curr_piece->from_original)
-      ? data->ed->original
-      : data->ed->added;
+      ? conf->ed->original
+      : conf->ed->added;
     for (int i = 0; i < curr_piece->length; i++) {
-      if (curr_piece == data->ed->cursor.piece
-        && i == data->ed->cursor.offset) {
+      if (curr_piece == conf->cursor.piece
+        && i == conf->cursor.offset) {
         caret = encoding_ptr;
       }
+      assert(encoding_ptr < buffer + BUFFER_LEN);
       const int index = curr_piece->start + i;
       rune_encode(&encoding_ptr, source[index]);
     }
@@ -86,13 +98,11 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
   }
 
   const int max_rows = 20;
-
   text_line_t lines[max_rows];
-
   int row_count = text_break_lines(
     app->vg,
-    &app->font_fallback,
-    12,
+    conf->font,
+    conf->font_size,
     buffer,
     encoding_ptr,
     constraints.x,
@@ -118,7 +128,7 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
       .content = content,
       .content_end = content + content_length,
       .font = &app->font_fallback,
-      .size = 12,
+      .font_size = conf->font_size,
       .caret = caret_idx,
     };
 
@@ -140,9 +150,40 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
   });
 }
 
+point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* data) {
+  return editable_text(app, constraints, &(editable_text_t){
+    .color = (color_t){0,0,0,255},
+    .ed = data->ed,
+    .first_piece = data->block->first_piece,
+    .font = &app->font_fallback,
+    .font_size = 12,
+    .cursor = data->ed->cursor,
+  });
+}
+
+point_t draw_heading(AppContext *app, point_t constraints, block_draw_data_t* data) {
+  block_heading_t *heading = (block_heading_t *) data->block;
+
+  float font_size = 12;
+
+  if (heading->level == 1) {
+    font_size = 48;
+  }
+
+  return editable_text(app, constraints, &(editable_text_t){
+    .color = (color_t){0,0,0,255},
+    .ed = data->ed,
+    .first_piece = data->block->first_piece,
+    .font = &app->font_fallback,
+    .font_size = font_size,
+    .cursor = data->ed->cursor,
+  });
+}
+
 widget_draw_t draw_function_for_type(blocktype_t type) {
   switch (type) {
     case blocktype_paragraph: return (widget_draw_t) draw_paragraph;
+    case blocktype_heading: return (widget_draw_t) draw_heading;
     default: {
       fprintf(stderr, "Editor draw function for block type %d not defined!\n", type);
       exit(1);
@@ -173,6 +214,10 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           } else {
             editor_split_block_at_cursor(ed, &ed->cursor);
           }
+        } else if (keyevent.key == GLFW_KEY_1 && keyevent.mods & GLFW_MOD_CONTROL) {
+          block_t * heading = (block_t *) editor_create_block_heading(ed, 1, NULL, NULL);
+          editor_block_turn_into(ed, ed->cursor.block, heading);
+          ed->cursor.block = heading;
         }
       }
     }

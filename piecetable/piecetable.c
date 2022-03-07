@@ -32,6 +32,24 @@ piecetable_piece_t *create_new_blockterminator(editor_t *ed) {
   return newline_piece;
 }
 
+// Check whether the editor is empty. If it is, insert an empty paragraph block.
+// This is done to prevent the the user from removing all blocks,
+// at which point there is no way to add content again.
+void editor_ensure_not_empty(editor_t *ed) {
+  if (!ed->first) {
+    piecetable_piece_t *bt = create_new_blockterminator(ed);
+    block_t *paragraph = (block_t *) editor_create_block_paragraph(ed, bt, bt);
+    ed->first = paragraph;
+    ed->last = paragraph;
+    ed->cursor = (editor_cursor_t){
+      .block = paragraph,
+      .piece = bt,
+      .offset = 0,
+    };
+  }
+}
+
+
 // Remove the blockterminator from a block if it has one.
 // Returns whether a terminator was removed.
 bool block_remove_terminator(editor_t *ed, block_t *block) {
@@ -247,7 +265,20 @@ void editor_delete_block(editor_t *ed, block_t *block) {
 
   free(block);
 
-  // TODO: Check if editor is empty!
+  editor_ensure_not_empty(ed);
+}
+
+// A block is considered empty if contains no pieces or a single blockterminator piece.
+bool editor_block_is_empty(editor_t *ed, block_t *block) {
+  // Block is completely empty
+  if (!block->first_piece) return true;
+
+  if (block->first_piece == block->last_piece // Block contains a single piece
+      && piece_is_blockterminator(ed, block->first_piece)) {
+    return true;
+  }
+
+  return false;
 }
 
 // Debugging only.
@@ -287,25 +318,61 @@ void editor_block_check_health(block_t *block) {
   }
 }
 
+// Change the type of a block by replacing it with another one.
+// The piecetable pieces from the old block are put into the new one,
+// the new block is inserted where the old block was
+// and the old block is freed.
+// The new block should therefore not be linked into the block list yet.
+void editor_block_turn_into(editor_t *ed, block_t *old, block_t *new_block) {
+  new_block->first_piece = old->first_piece;
+  new_block->last_piece = old->last_piece;
+
+  new_block->next = old->next;
+  new_block->prev = old->prev;
+
+  if (old->prev) {
+    old->prev->next = new_block;
+  } else {
+    ed->first = new_block;
+  }
+
+  if (old->next) {
+    old->next->prev = new_block;
+  } else {
+    ed->last = new_block;
+  }
+
+  free(old);
+}
+
 void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor) {
   if (cursor->offset == 0) {
     if (cursor->piece->prev) {
       cursor->piece->prev->length--;
       piece_gc(cursor->block, cursor->piece->prev);
     } else {
-      // Delete at the beginning of a block, append this blocks to the previous block
-      if (cursor->block->prev) {
-        // Only do this if this is not the first block
-        block_append_pieces(
-          ed,
-          cursor->block->prev,
-          cursor->block->first_piece,
-          cursor->block->last_piece
-        );
+      // Delete at the beginning of a block
 
-        editor_delete_block(ed, cursor->block);
+      if (cursor->block->type != blocktype_paragraph) {
+        // If the block is not a paragraph, turn it into one
+        block_t *paragraph = (block_t *) editor_create_block_paragraph(ed, NULL, NULL);
+        editor_block_turn_into(ed, cursor->block, paragraph);
+        cursor->block = paragraph;
+      } else {
+        // If the block is a paragraph, append its content to the previous block
+        if (cursor->block->prev) {
+          // Only do this if this is not the first block
+          block_append_pieces(
+            ed,
+            cursor->block->prev,
+            cursor->block->first_piece,
+            cursor->block->last_piece
+          );
 
-        cursor->block = cursor->block->prev;
+          editor_delete_block(ed, cursor->block);
+
+          cursor->block = cursor->block->prev;
+        }
       }
     }
   } else if (cursor->offset == 1) {
@@ -409,6 +476,12 @@ editor_t editor_create(char *initial_content_string) {
     .piece = original_piece,
     .offset = 0,
   };
+
+  piecetable_piece_t *bt = create_new_blockterminator(&editor);
+  block_t *heading = (block_t *) editor_create_block_heading(&editor, 1, bt, bt);
+  append_rune(&editor, 'a' << 24);
+  insert_piece_before(heading, bt, false, veclen(editor.added) - 1, 1);
+  editor_insert_block_after(&editor, editor.first, heading);
 
   return editor;
 }

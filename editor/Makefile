@@ -9,7 +9,7 @@ all: $(RES)
 	$(CC) $(PARENT_CFLAGS) -fPIC -c $< -o $@
 
 $(RES): $(OBJS)
-	ar crT $(RES) $(OBJS)
+	ar cr $(RES) $(OBJS)
 
 .PHONY: clean
 clean:
