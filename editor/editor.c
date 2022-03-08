@@ -47,7 +47,7 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
     );
 
     float caret_x_offset = glyph_positions[conf->caret].minx;
-    with_offset(&app->oplist, (point_t){.x = caret_x_offset}) {
+    with_offset(&app->oplist, (point_t){caret_x_offset, -conf->font_size * 0.25}) {
       rect(
         app,
         (point_t){

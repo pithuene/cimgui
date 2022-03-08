@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include "../font/utf8/utf8.h"
 #include "../ds/ds/vec.h"
@@ -72,6 +73,7 @@ void editor_block_turn_into(editor_t *ed, block_t *old, block_t *new_block);
 piecetable_piece_t *editor_create_new_blockterminator(editor_t *ed);
 
 void editor_import_markdown(editor_t *ed, const char *markdown);
+void editor_export_markdown(editor_t *ed, FILE *output);
 
 // Create a new paragraph block. The block must still be linked into the list.
 block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
