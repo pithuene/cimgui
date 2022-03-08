@@ -1,4 +1,5 @@
 #include "piecetable.h"
+#include "../ds/ds/vec.h"
 #include <assert.h>
 #include <stdio.h>
 
@@ -570,6 +571,32 @@ void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
   *cursor = (editor_cursor_t){
     .block = new_paragraph,
     .piece = second,
+    .offset = 0,
+  };
+}
+
+void editor_clear(editor_t *ed) {
+  block_t *curr_block = ed->first;
+  while (curr_block) {
+    piecetable_piece_t *curr_piece = curr_block->first_piece;
+    while (curr_piece) {
+      free(curr_piece);
+      curr_piece = curr_piece->next;
+    }
+    free(curr_block);
+    curr_block = curr_block->next;
+  }
+  vecfree(ed->added);
+  free(ed->original);
+
+  ed->added = vec(rune_t, 64);
+  ed->original = NULL;
+
+  piecetable_piece_t *bt = editor_create_new_blockterminator(ed);
+  block_t *paragraph = (block_t *) editor_create_block_paragraph(ed, bt, bt);
+  ed->cursor = (editor_cursor_t){
+    .block = paragraph,
+    .piece = bt,
     .offset = 0,
   };
 }

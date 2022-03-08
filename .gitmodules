@@ -7,3 +7,6 @@
 [submodule "piecetable/md4c"]
 	path = piecetable/md4c
 	url = https://github.com/mity/md4c.git
+[submodule "filedialog/nativefiledialog"]
+	path = filedialog/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog.git
