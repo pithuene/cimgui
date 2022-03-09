@@ -1,9 +1,40 @@
 #include <stdio.h>
 #include <assert.h>
+#include <pthread.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <stdlib.h>
 #include "editor.h"
 #include "../widgets/widgets.h"
 #include "../element/element.h"
 #include "../ops/ops.h"
+#include "../filedialog/filedialog.h"
+
+
+// Open a file selection dialog and import the selected markdown file.
+static void editor_open_file(editor_t *ed) {
+  nfdchar_t *path = NULL;
+  nfdresult_t dialog_result = NFD_OpenDialog(NULL, NULL, &path);
+  if (dialog_result == NFD_OKAY) {
+    editor_clear(ed);
+
+    int fd = open(path, O_RDONLY);
+    struct stat stats;
+    fstat(fd, &stats);
+    const char *file_content = mmap(NULL, stats.st_size, PROT_READ, MAP_SHARED, fd, 0);
+    editor_import_markdown(ed, file_content);
+    munmap((void *) file_content, stats.st_size);
+    free(path);
+
+    editor_delete_block(ed, ed->first);
+    ed->cursor = (editor_cursor_t){
+      .block = ed->first,
+      .piece = ed->first->first_piece,
+      .offset = 0,
+    };
+  }
+}
 
 typedef struct {
   editor_t *ed;
@@ -72,6 +103,7 @@ typedef struct {
   color_t color;
   editor_cursor_t cursor;
 } editable_text_t;
+
 
 point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
   // TODO: If there is over 1k of text in a block, this will fail
@@ -198,6 +230,7 @@ widget_draw_t draw_function_for_type(blocktype_t type) {
   }
 }
 
+
 point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == eventtype_char) {
@@ -225,6 +258,9 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           block_t * heading = (block_t *) editor_create_block_heading(ed, 1, NULL, NULL);
           editor_block_turn_into(ed, ed->cursor.block, heading);
           ed->cursor.block = heading;
+        } else if (keyevent.key == GLFW_KEY_O && keyevent.mods & GLFW_MOD_CONTROL) {
+          pthread_t file_open_thread;
+          pthread_create(&file_open_thread, NULL, (void *(*)(void *)) editor_open_file, (void *) ed);
         }
       }
     }

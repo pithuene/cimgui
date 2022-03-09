@@ -17,7 +17,7 @@ clean:
 	rm -f $(OBJS) $(RES)
 
 nativefiledialog/build/lib/Release/x64/libnfd.a: force_look
-	$(MAKE) -C nativefiledialog/build/gmake_linux
+	$(MAKE) -C nativefiledialog/build/gmake_linux CFLAGS="-fPIC"
 
 force_look:
 	true

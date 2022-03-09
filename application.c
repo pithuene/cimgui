@@ -20,8 +20,10 @@
 #include "widgets/widgets.h"
 #include "piecetable/piecetable.h"
 
+void application_draw(AppContext *context);
+
 void errorcb(int error, const char* desc) {
-	printf("GLFW error %d: %s\n", error, desc);
+  printf("GLFW error %d: %s\n", error, desc);
 }
 
 static void mousebutton_callback(GLFWwindow* glWindow, int button, int action, int mods) {
@@ -43,8 +45,8 @@ static void key_callback(GLFWwindow* glWindow, int key, int scancode, int action
   eventqueue_enqueue(&context->eventqueue, key_event(key, scancode, action, mods));
 
   // TODO: Add window close operation
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(glWindow, GL_TRUE);
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    glfwSetWindowShouldClose(glWindow, GL_TRUE);
 }
 
 static void char_callback(GLFWwindow* glWindow, rune_t rune) {
@@ -70,6 +72,12 @@ void windowsize_callback(GLFWwindow* window, int width, int height) {
 void charmods_callback(GLFWwindow* window, unsigned int codepoint, int mods) {
   AppContext * context = glfwGetWindowUserPointer(window);
   eventqueue_enqueue(&context->eventqueue, charmods_event(codepoint, mods));
+}
+
+void windowrefresh_callback(GLFWwindow* window) {
+  AppContext *context = glfwGetWindowUserPointer(window);
+  application_draw(context);
+  glfwPostEmptyEvent();
 }
 
 struct AppContext *application_create(void) {
@@ -137,6 +145,7 @@ struct AppContext *application_create(void) {
   glfwSetCursorPosCallback(state->glWindow, cursorpos_callback);
   glfwSetScrollCallback(state->glWindow, scroll_callback);
   glfwSetWindowSizeCallback(state->glWindow, windowsize_callback);
+  glfwSetWindowRefreshCallback(state->glWindow, windowrefresh_callback);
 
 	glfwMakeContextCurrent(state->glWindow);
 	glewExperimental = GL_TRUE;
@@ -159,12 +168,6 @@ struct AppContext *application_create(void) {
 
 	return state;
 }
-
-typedef struct {
-  void *curr_handle;
-  AppLoopFunction draw;
-  time_t loaded_last_modified;
-} hot_reload_state_t;
 
 void empty_app_loop_function(AppContext * app, void * data) {
   point_t window_dimensions = (point_t){app->window.width, app->window.height};
@@ -232,128 +235,134 @@ static bool hot_code_load(hot_reload_state_t *hrs) {
   return true;
 }
 
+void application_draw(AppContext *context) {
+  bool hot_reload_performed = hot_code_load(&context->hr_state);
 
-void application_loop(struct AppContext *context, AppLoopFunction initial_draw, void * data) {
-  double t = glfwGetTime();
-	double prevt = 0;
+  if (hot_reload_performed) {
+    // Force a redraw if a new version was linked in
+    eventqueue_enqueue(&context->eventqueue, nop_event());
+  }
+
+  double mx, my, dt;
+  int winWidth, winHeight;
+  int fbWidth, fbHeight;
+  float pxRatio;
+  point_t cursor;
+
+  context->t = glfwGetTime();
+
+  // Draw only if there are events to be handled or if the next frame is forced.
+  if (context->forceNextFrameDraw || !eventqueue_noinput(&context->eventqueue)) {
+    glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
+    glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
+
+    // Update and render
+    glViewport(0, 0, fbWidth, fbHeight);
+    // Background
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
+
+
+    // Calculate pixel ration for hi-dpi devices.
+    pxRatio = (float)fbWidth / (float)winWidth;
+
+    nvgBeginFrame(context->vg, winWidth, winHeight, pxRatio);
+
+    // Set cursor position
+    glfwGetCursorPos(context->glWindow, &mx, &my);
+    cursor = (point_t){mx, my};
+    context->cursor = cursor;
+
+    // Calculate deltatime
+    dt = context->t - context->prevt;
+    context->prevt = context->t;
+    context->deltatime = dt,
+
+    context->window = (WindowInfo){
+      .height = winHeight,
+      .width = winWidth,
+      .fbHeight = fbHeight,
+      .fbWidth = fbWidth,
+      .pxRatio = pxRatio,
+    };
+
+    // If a frame had events to handle, force another draw on the next frame.
+    // This fixes the issue of displaying data before changing it.
+    //
+    // Say the click of a button increments a counter, if the button is drawn
+    // and therefore its events are handled *after* the counter is displayed,
+    // and you only draw when there are events, the counter won't change until
+    // something else emits another event.
+    if (!eventqueue_noinput(&context->eventqueue)) {
+      // This frame was not forced. There were actual events to handle.
+      // Force a redraw next frame.
+      context->forceNextFrameDraw = true;
+    } else {
+      // This frame was forced. Don't force another.
+      context->forceNextFrameDraw = false;
+    }
+
+    set_draw_stack_start(&context);
+    // Call the draw function.
+    // Handles all events, executes the layout logic and populates the oplist
+    (*context->hr_state.draw)(context, context->data);
+
+    // Clear events from last frame.
+    // Occurs before the oplist execution so events for the next frame can
+    // be created during execution.
+    eventqueue_clear(&context->eventqueue);
+    arena_allocator_reset(&context->event_arena);
+
+    //oplist_print(&context->oplist);
+    application_oplist_execute(context);
+
+    nvgEndFrame(context->vg);
+    glfwSwapBuffers(context->glWindow);
+
+    oplist_clear(&context->oplist);
+    arena_allocator_reset(&context->ops_arena);
+  }
+
+  _MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
+    context->_lastMouseButtonPresses[0],
+    context->_lastMouseButtonPresses[1],
+    context->_lastMouseButtonPresses[2],
+  };
+
+  glfwWaitEventsTimeout(1.0/60.0);
+
+  // Generate MouseButtonHeldDown events
+  for (int8_t i = 0; i < 3; i++) {
+    if (IsMouseButtonHeldDownBefore[i].isDown && context->_lastMouseButtonPresses[i].isDown) {
+      // TODO: Fix mods
+      eventqueue_enqueue(&context->eventqueue, mousebuttonhelddown_event(context->_lastMouseButtonPresses[i].press, i, cursor, 0));
+    }
+  }
+}
+
+
+void application_loop(struct AppContext *context, AppLoopFunction initial_draw, void *data) {
+
+  context->t = glfwGetTime();
+	context->prevt = 0;
 	glfwSwapInterval(0);
 
 	glfwSetTime(0);
-	prevt = glfwGetTime();
+	context->prevt = glfwGetTime();
 
-  hot_reload_state_t hr_state = {
+  context->hr_state = (hot_reload_state_t){
     .curr_handle = NULL,
     .draw = empty_app_loop_function,
   };
 
+  context->data = data;
+
   // Forces the next frame even if there are no events
   // Set to true to trigger the initial draw.
-  bool forceNextFrameDraw = true;
+  context->forceNextFrameDraw = true;
 
-	while (!glfwWindowShouldClose(context->glWindow)) {
-    bool hot_reload_performed = hot_code_load(&hr_state);
-
-    if (hot_reload_performed) {
-      // Force a redraw if a new version was linked in
-      eventqueue_enqueue(&context->eventqueue, nop_event());
-    }
-
-		double mx, my, dt;
-		int winWidth, winHeight;
-		int fbWidth, fbHeight;
-		float pxRatio;
-    point_t cursor;
-
-		t = glfwGetTime();
-
-    // Draw only if there are events to be handled or if the next frame is forced.
-    if (forceNextFrameDraw || !eventqueue_noinput(&context->eventqueue)) {
-      glfwGetWindowSize(context->glWindow, &winWidth, &winHeight);
-      glfwGetFramebufferSize(context->glWindow, &fbWidth, &fbHeight);
-
-      // Update and render
-      glViewport(0, 0, fbWidth, fbHeight);
-      // Background
-      glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
-
-
-      // Calculate pixel ration for hi-dpi devices.
-      pxRatio = (float)fbWidth / (float)winWidth;
-
-      nvgBeginFrame(context->vg, winWidth, winHeight, pxRatio);
-
-      // Set cursor position
-      glfwGetCursorPos(context->glWindow, &mx, &my);
-      cursor = (point_t){mx, my};
-      context->cursor = cursor;
-
-      // Calculate deltatime
-      dt = t - prevt;
-      prevt = t;
-      context->deltatime = dt,
-
-      context->window = (WindowInfo){
-        .height = winHeight,
-        .width = winWidth,
-        .fbHeight = fbHeight,
-        .fbWidth = fbWidth,
-        .pxRatio = pxRatio,
-      };
-
-      // If a frame had events to handle, force another draw on the next frame.
-      // This fixes the issue of displaying data before changing it.
-      //
-      // Say the click of a button increments a counter, if the button is drawn
-      // and therefore its events are handled *after* the counter is displayed,
-      // and you only draw when there are events, the counter won't change until
-      // something else emits another event.
-      if (!eventqueue_noinput(&context->eventqueue)) {
-        // This frame was not forced. There were actual events to handle.
-        // Force a redraw next frame.
-        forceNextFrameDraw = true;
-      } else {
-        // This frame was forced. Don't force another.
-        forceNextFrameDraw = false;
-      }
-
-      set_draw_stack_start(&context);
-      // Call the draw function.
-      // Handles all events, executes the layout logic and populates the oplist
-      (*hr_state.draw)(context, data);
-
-      // Clear events from last frame.
-      // Occurs before the oplist execution so events for the next frame can
-      // be created during execution.
-      eventqueue_clear(&context->eventqueue);
-      arena_allocator_reset(&context->event_arena);
-
-      //oplist_print(&context->oplist);
-      application_oplist_execute(context);
-
-      nvgEndFrame(context->vg);
-      glfwSwapBuffers(context->glWindow);
-
-      oplist_clear(&context->oplist);
-      arena_allocator_reset(&context->ops_arena);
-    }
-
-    _MouseButtonHeldDownState IsMouseButtonHeldDownBefore[3] = {
-      context->_lastMouseButtonPresses[0],
-      context->_lastMouseButtonPresses[1],
-      context->_lastMouseButtonPresses[2],
-    };
-
-    glfwWaitEventsTimeout(1.0/60.0);
-
-    // Generate MouseButtonHeldDown events
-    for (int8_t i = 0; i < 3; i++) {
-      if (IsMouseButtonHeldDownBefore[i].isDown && context->_lastMouseButtonPresses[i].isDown) {
-        // TODO: Fix mods
-        eventqueue_enqueue(&context->eventqueue, mousebuttonhelddown_event(context->_lastMouseButtonPresses[i].press, i, cursor, 0));
-      }
-    }
-	}
+	while (!glfwWindowShouldClose(context->glWindow))
+    application_draw(context);
 }
 
 void application_free(struct AppContext *state) {

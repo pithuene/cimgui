@@ -2,6 +2,7 @@
 #define _H_APPLICATION
 
 #include <GLFW/glfw3.h>
+#include <sys/types.h>
 #include "nanovg/src/nanovg.h"
 #include "utils/utils.h"
 #include "events/events.h"
@@ -25,7 +26,17 @@ typedef struct {
 	float pxRatio;
 } WindowInfo;
 
-typedef struct AppContext {
+typedef struct AppContext AppContext;
+
+typedef void(*AppLoopFunction)(AppContext *, void *);
+
+typedef struct {
+  void *curr_handle;
+  AppLoopFunction draw;
+  time_t loaded_last_modified;
+} hot_reload_state_t;
+
+struct AppContext {
 	GLFWwindow *glWindow;
 	NVGcontext *vg;
 
@@ -44,9 +55,13 @@ typedef struct AppContext {
   double deltatime;
   _MouseButtonHeldDownState _lastMouseButtonPresses[3];
   Font font_fallback;
-} AppContext;
-
-typedef void(*AppLoopFunction)(AppContext *, void *);
+  // User data passed to the draw function
+  void *data;
+  bool forceNextFrameDraw;
+  double prevt;
+  double t;
+  hot_reload_state_t hr_state;
+};
 
 typedef struct {
   AppLoopFunction draw;
@@ -62,6 +77,8 @@ void application_loop(
   void * data
 );
 void application_free(AppContext *state);
+
+void empty_app_loop_function(AppContext * app, void * data);
 
 // Wrapper which both registers an input area for the next frame
 // and retreives the mapping from the event emitted last frame.

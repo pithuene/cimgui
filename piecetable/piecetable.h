@@ -57,6 +57,8 @@ typedef struct {
 editor_t editor_create(char *initial_content_string);
 // How many blocks are there in the document
 int editor_block_count(editor_t *ed);
+// Remove all content from an editor
+void editor_clear(editor_t *ed);
 // Move a cursor forward
 void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor);
 // Move a cursor backward
@@ -65,6 +67,8 @@ void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor);
 void editor_insert_before(editor_t *ed, editor_cursor_t *cursor, rune_t rune);
 // Delete the rune before a cursor
 void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
+// Delete a block out of an editor
+void editor_delete_block(editor_t *ed, block_t *block);
 // Insert new_block after a given block
 void editor_insert_block_after(editor_t *ed, block_t *after, block_t *new_block);
 // Split a block into two at the cursor

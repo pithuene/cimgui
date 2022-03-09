@@ -25,17 +25,6 @@ int main(void) {
   //state.fontNormal = load_font(app->vg, "Roboto", 0.73, 0.065);
   state.fontNormal = app->font_fallback;
 
-  nfdchar_t *path = NULL;
-  nfdresult_t dialog_result = NFD_OpenDialog(NULL, NULL, &path);
-  if (dialog_result == NFD_OKAY) {
-    printf("Opened '%s'\n", path);
-  } else if (dialog_result == NFD_CANCEL) {
-    printf("Dialog canceled\n");
-  } else {
-    printf("Error '%s'\n", NFD_GetError());
-  }
-
-
   application_loop(app, (AppLoopFunction) NULL, &state);
   application_free(app);
 }

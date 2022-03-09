@@ -580,11 +580,13 @@ void editor_clear(editor_t *ed) {
   while (curr_block) {
     piecetable_piece_t *curr_piece = curr_block->first_piece;
     while (curr_piece) {
+      piecetable_piece_t *next_piece = curr_piece->next;
       free(curr_piece);
-      curr_piece = curr_piece->next;
+      curr_piece = next_piece;
     }
+    block_t *next_block = curr_block->next;
     free(curr_block);
-    curr_block = curr_block->next;
+    curr_block = next_block;
   }
   vecfree(ed->added);
   free(ed->original);
@@ -594,6 +596,9 @@ void editor_clear(editor_t *ed) {
 
   piecetable_piece_t *bt = editor_create_new_blockterminator(ed);
   block_t *paragraph = (block_t *) editor_create_block_paragraph(ed, bt, bt);
+  ed->first = paragraph;
+  ed->last = paragraph;
+
   ed->cursor = (editor_cursor_t){
     .block = paragraph,
     .piece = bt,
