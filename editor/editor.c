@@ -244,6 +244,24 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           editor_move_cursor_backward(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_RIGHT) {
           editor_move_cursor_forward(ed, &ed->cursor);
+        } else if (keyevent.key == GLFW_KEY_DOWN) {
+          if (ed->cursor.block->next) {
+            // TODO: Actually move cursor to the closest position in the row below
+            ed->cursor = (editor_cursor_t){
+              .block = ed->cursor.block->next,
+              .piece = ed->cursor.block->next->first_piece,
+              .offset = 0,
+            };
+          }
+        } else if (keyevent.key == GLFW_KEY_UP) {
+          if (ed->cursor.block->prev) {
+            // TODO: Actually move cursor to the closest position in the row above
+            ed->cursor = (editor_cursor_t){
+              .block = ed->cursor.block->prev,
+              .piece = ed->cursor.block->prev->first_piece,
+              .offset = 0,
+            };
+          }
         } else if (keyevent.key == GLFW_KEY_BACKSPACE) {
           editor_delete_backwards(ed, &ed->cursor);
         } else if (keyevent.key == GLFW_KEY_ENTER) {
