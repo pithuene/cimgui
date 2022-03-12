@@ -554,9 +554,29 @@ static void split_piece_at_cursor(editor_cursor_t *cursor, piecetable_piece_t **
   );
 }
 
+// Copy a block of any type.
+block_t *editor_copy_block(block_t *block) {
+  switch (block->type) {
+    case blocktype_bullet: {
+      block_bullet_t *new_block = (block_bullet_t *) malloc(sizeof(block_bullet_t));
+      *new_block = *((block_bullet_t *) block);
+      return (block_t *) new_block;
+    }
+    case blocktype_heading: {
+      block_heading_t *new_block = (block_heading_t *) malloc(sizeof(block_heading_t));
+      *new_block = *((block_heading_t *) block);
+      return (block_t *) new_block;
+    }
+    case blocktype_paragraph: // Fallthrough
+    default: {
+      block_paragraph_t *new_block = (block_paragraph_t *) malloc(sizeof(block_paragraph_t));
+      *new_block = *((block_paragraph_t *) block);
+      return (block_t *) new_block;
+    }
+  }
+}
+
 void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
-  // TODO: The created block should usually be of the same type. To implement this I would need some sort of a "copy block of any type" mechanism or change how blocktypes are handled.
-  
   // The last content piece that remains in the cursor block
   piecetable_piece_t *first = NULL;
   // The first piece of the new block 
@@ -566,8 +586,12 @@ void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
 
   // Create and insert the new block
   second->prev = NULL;
-  block_t *new_paragraph = (block_t *) editor_create_block_paragraph(ed, second, cursor->block->last_piece);
-  editor_insert_block_after(ed, cursor->block, new_paragraph);
+  
+  block_t *new_block = editor_copy_block(cursor->block);
+  new_block->first_piece = second;
+  new_block->last_piece = cursor->block->last_piece;
+
+  editor_insert_block_after(ed, cursor->block, new_block);
 
   // Append a new block_terminator to the first block and fix all links
   piecetable_piece_t *first_blockterminator = editor_create_new_blockterminator(ed);
@@ -582,7 +606,7 @@ void editor_split_block_at_cursor(editor_t *ed, editor_cursor_t *cursor) {
 
   // Place cursor at beginning of new block
   *cursor = (editor_cursor_t){
-    .block = new_paragraph,
+    .block = new_block,
     .piece = second,
     .offset = 0,
   };
