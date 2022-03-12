@@ -219,10 +219,49 @@ point_t draw_heading(AppContext *app, point_t constraints, block_draw_data_t* da
   });
 }
 
+point_t draw_bullet(AppContext *app, point_t constraints, block_draw_data_t* data) {
+  block_bullet_t *bullet = (block_bullet_t*) data->block;
+  unit_length_t left_padding = {bullet->indentation_level * 20, unit_px};
+  unit_length_t bullet_point_width = {10, unit_px};
+  unit_length_t content_width = {constraints.x - bullet_point_width.size - left_padding.size, unit_px};
+
+  return row(app, constraints, &(row_t){
+    .spacing  = 6,
+    .children = element_children(
+        {
+          .width = left_padding,
+          .widget = widget(rect, &(circle_t){
+            .color = (color_t){0,0,0,0},
+          })
+        },
+        {
+          .width = bullet_point_width,
+          .height = {5, unit_px},
+          .y_align = align_center,
+          .widget = widget(circle, &(circle_t){
+            .color = (color_t){0,0,0,255},
+          })
+        },
+        {
+          .width = content_width,
+          .widget = widget(editable_text, &(editable_text_t){
+            .color = (color_t){0,0,0,255},
+            .ed = data->ed,
+            .first_piece = data->block->first_piece,
+            .font = &app->font_fallback,
+            .font_size = 12,
+            .cursor = data->ed->cursor,
+          })
+        }
+    ),
+  });
+}
+
 widget_draw_t draw_function_for_type(blocktype_t type) {
   switch (type) {
     case blocktype_paragraph: return (widget_draw_t) draw_paragraph;
     case blocktype_heading: return (widget_draw_t) draw_heading;
+    case blocktype_bullet: return (widget_draw_t) draw_bullet;
     default: {
       fprintf(stderr, "Editor draw function for block type %d not defined!\n", type);
       exit(1);
@@ -276,9 +315,49 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           block_t * heading = (block_t *) editor_create_block_heading(ed, 1, NULL, NULL);
           editor_block_turn_into(ed, ed->cursor.block, heading);
           ed->cursor.block = heading;
+        } else if (keyevent.key == GLFW_KEY_L && keyevent.mods & GLFW_MOD_CONTROL) {
+          block_t * bullet = (block_t *) editor_create_block_bullet(ed, 0, NULL, NULL);
+          editor_block_turn_into(ed, ed->cursor.block, bullet);
+          ed->cursor.block = bullet;
+        } else if (keyevent.key == GLFW_KEY_TAB) {
+          if (ed->cursor.block->type == blocktype_bullet) {
+            // List indentation
+            block_bullet_t *bullet_block = (block_bullet_t *) ed->cursor.block;
+            if (keyevent.mods & GLFW_MOD_SHIFT) {
+              // Move the current list entry aswell as all child entries back
+              vec_t(block_bullet_t *) entries_to_move = vec(block_bullet_t *, 16);
+              vecpush(entries_to_move, (block_bullet_t *) ed->cursor.block);
+              if (bullet_block->indentation_level > 0 // Only move children if you are actually moving the block under the cursor
+                  && bullet_block->block.next
+                  && bullet_block->block.next->type == blocktype_bullet
+                  && ((block_bullet_t *) bullet_block->block.next)->indentation_level > bullet_block->indentation_level)
+              {
+                // There are child elements, add them to the list of entries to move
+                for (block_bullet_t *curr_child = (block_bullet_t *) bullet_block->block.next;
+                     curr_child && curr_child->block.type == blocktype_bullet && curr_child->indentation_level > bullet_block->indentation_level;
+                     curr_child = (block_bullet_t *) curr_child->block.next)
+                {
+                  vecpush(entries_to_move, curr_child);
+                }
+              }
+
+              for (int i = 0; i < veclen(entries_to_move); i++) {
+                if (entries_to_move[i]->indentation_level > 0) entries_to_move[i]->indentation_level--;
+              }
+            } else {
+              block_bullet_t *previous_bullet = NULL;
+              if (bullet_block->block.prev->type == blocktype_bullet) previous_bullet = (block_bullet_t *) bullet_block->block.prev;
+
+              if (previous_bullet && previous_bullet->indentation_level >= bullet_block->indentation_level) {
+                if (bullet_block->indentation_level < 10) bullet_block->indentation_level++;
+              }
+            }
+          }
         } else if (keyevent.key == GLFW_KEY_O && keyevent.mods & GLFW_MOD_CONTROL) {
           pthread_t file_open_thread;
           pthread_create(&file_open_thread, NULL, (void *(*)(void *)) editor_open_file, (void *) ed);
+        } else if (keyevent.key == GLFW_KEY_S && keyevent.mods & GLFW_MOD_CONTROL) {
+          editor_export_markdown(ed, stdout);
         }
       }
     }

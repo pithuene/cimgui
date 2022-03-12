@@ -19,6 +19,7 @@ typedef struct piecetable_piece_t {
 typedef enum {
   blocktype_paragraph,
   blocktype_heading,
+  blocktype_bullet,
 } blocktype_t;
 
 typedef struct block_t {
@@ -39,6 +40,11 @@ typedef struct {
   block_t block;
   uint8_t level;
 } block_heading_t;
+
+typedef struct {
+  block_t block;
+  uint8_t indentation_level;
+} block_bullet_t;
 
 typedef struct {
   block_t            *block;
@@ -83,5 +89,6 @@ void editor_export_markdown(editor_t *ed, FILE *output);
 block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
 
 block_heading_t *editor_create_block_heading(editor_t *ed, uint8_t level, piecetable_piece_t *first, piecetable_piece_t *last);
+block_bullet_t *editor_create_block_bullet(editor_t *ed, uint8_t level, piecetable_piece_t *first, piecetable_piece_t *last);
 
 #endif

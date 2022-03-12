@@ -494,6 +494,19 @@ block_heading_t *editor_create_block_heading(editor_t *ed, uint8_t level, piecet
   return new_heading;
 }
 
+block_bullet_t *editor_create_block_bullet(editor_t *ed, uint8_t indentation_level, piecetable_piece_t *first, piecetable_piece_t *last) {
+  block_bullet_t *new_bullet = (block_bullet_t*) malloc(sizeof(block_bullet_t));
+  *new_bullet = (block_bullet_t){
+    .block = {
+      .type = blocktype_bullet,
+      .first_piece = first,
+      .last_piece = last,
+    },
+    .indentation_level = indentation_level,
+  };
+  return new_bullet;
+}
+
 block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last) {
   block_paragraph_t *new_paragraph = (block_paragraph_t*) malloc(sizeof(block_paragraph_t));
   *new_paragraph = (block_paragraph_t){
