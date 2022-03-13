@@ -18,6 +18,8 @@ typedef enum {
   optype_rect,
   optype_circle,
   optype_text,
+  optype_clip,
+  optype_reset_clip,
   optype_register_input_area,
 } optype_t;
 
@@ -61,6 +63,16 @@ typedef struct {
   const char *string;
   const char *end;
 } op_text_t;
+
+typedef struct {
+  optype_t type;
+  float    width;
+  float    height;
+} op_clip_t;
+
+typedef struct {
+  optype_t type;
+} op_reset_clip_t;
 
 typedef struct {
   optype_t type;
@@ -111,6 +123,9 @@ void op_fill(oplist_t *oplist);
 void op_rect(oplist_t *oplist, float width, float height);
 void op_circle(oplist_t *oplist, float radius);
 void op_text(oplist_t *oplist, float size, Font *font, const char *string, const char *end);
+void op_clip(oplist_t *oplist, float width, float height);
+void op_reset_clip(oplist_t *oplist);
+
 // Register an input area by which input events can be filtered.
 // To approximate where something will be drawn before op execution, the position it ended up at last frame is used.
 // This is done by saving the information during the actual draw

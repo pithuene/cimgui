@@ -61,6 +61,19 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
               op->end);
       return;
     }
+    case optype_clip: {
+      op_clip_t *op = (op_clip_t*) untyped_op;
+      nvgScissor(state->vg,
+              state->offset.x,
+              state->offset.y,
+              op->width,
+              op->height);
+      return;
+    }
+    case optype_reset_clip: {
+      nvgResetScissor(state->vg);
+      return;
+    }
     case optype_register_input_area: {
       op_register_input_area_t *op = (op_register_input_area_t*) untyped_op;
       const input_area_t area = bbox_from_dims(state->offset, op->dimensions.x, op->dimensions.y);
@@ -128,6 +141,20 @@ void op_text(oplist_t *oplist, float size, Font *font, const char *string, const
   op->font = font;
   op->string = string;
   op->end = end;
+  oplist_append(oplist, &op->type);
+}
+
+void op_clip(oplist_t *oplist, float width, float height) {
+  op_clip_t *op = arenaalloc(oplist->arena, sizeof(op_clip_t));
+  op->type = optype_clip;
+  op->width = width;
+  op->height = height;
+  oplist_append(oplist, &op->type);
+}
+
+void op_reset_clip(oplist_t *oplist) {
+  op_reset_clip_t *op = arenaalloc(oplist->arena, sizeof(op_reset_clip_t));
+  op->type = optype_reset_clip;
   oplist_append(oplist, &op->type);
 }
 

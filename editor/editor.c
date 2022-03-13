@@ -271,6 +271,8 @@ widget_draw_t draw_function_for_type(blocktype_t type) {
 
 
 point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
+  static float scroll_offset = 0;
+
   eventqueue_foreach(InputEvent event, app->eventqueue) {
     if (event.type == eventtype_char) {
       CharEvent charevent = event.instance.character;
@@ -358,6 +360,10 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           pthread_create(&file_open_thread, NULL, (void *(*)(void *)) editor_open_file, (void *) ed);
         } else if (keyevent.key == GLFW_KEY_S && keyevent.mods & GLFW_MOD_CONTROL) {
           editor_export_markdown(ed, stdout);
+        } else if (keyevent.key == GLFW_KEY_PAGE_UP) {
+          scroll_offset += 10;
+        } else if (keyevent.key == GLFW_KEY_PAGE_DOWN) {
+          scroll_offset -= 10;
         }
       }
     }
@@ -388,12 +394,17 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
     block_index++;
   }
 
+  
   column(app, constraints, &(column_t){
     .spacing = 20,
+    .overflow_handling = overflow_handling_scroll,
+    .scroll_offset = scroll_offset,
     .children = (element_children_t){
       .count = block_count,
       .elements = block_elements,
     },
   });
+
+
   return constraints;
 }

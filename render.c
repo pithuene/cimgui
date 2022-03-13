@@ -47,7 +47,7 @@ Even more content\n \
       app,
       (point_t){
         .x = unit_length_in_px((unit_length_t){50, unit_percent}, constraints.x),
-        .y = constraints.y,
+        .y = constraints.y - 150,
       },
       editor_state
     );

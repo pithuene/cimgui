@@ -37,9 +37,16 @@ typedef struct {
   element_t *elements;
 } element_children_t;
 
+typedef enum {
+  overflow_handling_none,
+  overflow_handling_scroll,
+} overflow_handling_t;
+
 typedef struct {
-  float              spacing;
-  element_children_t children;
+  float               spacing;
+  overflow_handling_t overflow_handling;
+  float               scroll_offset;
+  element_children_t  children;
 } row_t;
 
 typedef row_t column_t;

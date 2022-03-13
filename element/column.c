@@ -1,4 +1,5 @@
 #include "element.h"
+#include <stdbool.h>
 #include <stdio.h>
 
 point_t column(AppContext *app, point_t constraints, column_t *conf) {
@@ -39,7 +40,9 @@ point_t column(AppContext *app, point_t constraints, column_t *conf) {
   // Is the row wider than its constraints.
   // If so, there are no gaps.
   double total_width = total_widget_width;
+  bool overflowing = true;
   if (total_width < constraints.y) {
+    overflowing = false;
     total_width = constraints.y;
   }
 
@@ -49,46 +52,82 @@ point_t column(AppContext *app, point_t constraints, column_t *conf) {
   current_alignment = align_start;
   double remaining_widget_width = total_widget_width;
 
-  for (int i = 0; i < conf->children.count; i++) {
-    // Alignment push along
-    if (conf->children.elements[i].y_align > current_alignment) {
-      current_alignment = conf->children.elements[i].y_align;
-      if (current_alignment == align_center) {
-        double center_start = (total_width - center_widget_width) / 2;
-        if (current_width < center_start) {
-          current_width = center_start;
+  if (overflowing && conf->overflow_handling == overflow_handling_scroll) {
+    // Scroll handling
+    op_clip(&app->oplist, constraints.x, constraints.y);
+    with_offset(&app->oplist, (point_t){0,-conf->scroll_offset}) {
+      for (int i = 0; i < conf->children.count; i++) {
+        point_t topleft = {
+          .y = current_width,
+          .x = 0, // align_start
+        };
+        if (conf->children.elements[i].x_align == align_center) {
+          topleft.x = (max_height - child_draws[i].dimensions.x) / 2;
+        } else if (conf->children.elements[i].x_align == align_end) {
+          topleft.x = max_height - child_draws[i].dimensions.x;
+        }
+
+        with_offset(&app->oplist, topleft) {
+          deferred_draw_execute(app, child_draws[i]);
+        }
+
+        current_width          += child_draws[i].dimensions.y;
+        remaining_widget_width -= child_draws[i].dimensions.y;
+
+        if (i < conf->children.count - 1) {
+          current_width          += conf->spacing;
+          remaining_widget_width -= conf->spacing;
         }
       }
-      if (current_alignment == align_end) {
-        current_width = total_width - remaining_widget_width;
+    }
+    op_reset_clip(&app->oplist);
+
+    return (point_t){
+      .y = constraints.y,
+      .x = max_height,
+    };
+  } else {
+    for (int i = 0; i < conf->children.count; i++) {
+      // Alignment push along
+      /*if (conf->children.elements[i].y_align > current_alignment) {
+        current_alignment = conf->children.elements[i].y_align;
+        if (current_alignment == align_center) {
+          double center_start = (total_width - center_widget_width) / 2;
+          if (current_width < center_start) {
+            current_width = center_start;
+          }
+        }
+        if (current_alignment == align_end) {
+          current_width = total_width - remaining_widget_width;
+        }
+      }*/
+
+      point_t topleft = {
+        .y = current_width,
+        .x = 0, // align_start
+      };
+      if (conf->children.elements[i].x_align == align_center) {
+        topleft.x = (max_height - child_draws[i].dimensions.x) / 2;
+      } else if (conf->children.elements[i].x_align == align_end) {
+        topleft.x = max_height - child_draws[i].dimensions.x;
+      }
+
+      with_offset(&app->oplist, topleft) {
+        deferred_draw_execute(app, child_draws[i]);
+      }
+
+      current_width          += child_draws[i].dimensions.y;
+      remaining_widget_width -= child_draws[i].dimensions.y;
+
+      if (i < conf->children.count - 1) {
+        current_width          += conf->spacing;
+        remaining_widget_width -= conf->spacing;
       }
     }
 
-    point_t topleft = {
+    return (point_t){
       .y = current_width,
-      .x = 0, // align_start
+      .x = max_height,
     };
-    if (conf->children.elements[i].x_align == align_center) {
-      topleft.x = (max_height - child_draws[i].dimensions.x) / 2;
-    } else if (conf->children.elements[i].x_align == align_end) {
-      topleft.x = max_height - child_draws[i].dimensions.x;
-    }
-
-    op_offset(&app->oplist, topleft);
-    point_t childsize = deferred_draw_execute(app, child_draws[i]);
-    op_offset(&app->oplist, point_multiply(topleft, -1));
-
-    current_width          += childsize.y;
-    remaining_widget_width -= childsize.y;
-
-    if (i < conf->children.count - 1) {
-      current_width          += conf->spacing;
-      remaining_widget_width -= conf->spacing;
-    }
   }
-
-  return (point_t){
-    .y = current_width,
-    .x = max_height,
-  };
 }
