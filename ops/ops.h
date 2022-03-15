@@ -5,6 +5,7 @@
 #include "../ds/mem/arenaalloc.h"
 #include "../utils/utils.h"
 #include "../font/font.h"
+#include "../font/utf8/utf8.h"
 #include "../events/events.h"
 
 // The first field in every op struct is an optype_t type,
@@ -18,6 +19,7 @@ typedef enum {
   optype_rect,
   optype_circle,
   optype_text,
+  optype_rune_text,
   optype_clip,
   optype_reset_clip,
   optype_register_input_area,
@@ -63,6 +65,14 @@ typedef struct {
   const char *string;
   const char *end;
 } op_text_t;
+
+typedef struct {
+  optype_t type;
+  float size;
+  Font *font;
+  const rune_t *string;
+  const rune_t *end;
+} op_rune_text_t;
 
 typedef struct {
   optype_t type;
@@ -123,6 +133,8 @@ void op_fill(oplist_t *oplist);
 void op_rect(oplist_t *oplist, float width, float height);
 void op_circle(oplist_t *oplist, float radius);
 void op_text(oplist_t *oplist, float size, Font *font, const char *string, const char *end);
+void op_rune_text(oplist_t *oplist, float size, Font *font, const rune_t *string, const rune_t *end);
+point_t rune_text_bounds(NVGcontext *vg, float size, Font *font, const rune_t *string, const rune_t *end);
 void op_clip(oplist_t *oplist, float width, float height);
 void op_reset_clip(oplist_t *oplist);
 

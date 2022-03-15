@@ -61,6 +61,27 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
               op->end);
       return;
     }
+    case optype_rune_text: {
+      op_rune_text_t *op = (op_rune_text_t*) untyped_op;
+      nvgFontSize(state->vg, op->size / op->font->heightFactor);
+      nvgFontFaceId(state->vg, op->font->handle);
+	    nvgTextAlign(state->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+
+      int rune_count = op->end - op->string;
+      int encoding_length = runes_encoding_length(op->string, rune_count);
+      char encoded[encoding_length];
+      char *encoding_ptr = (char*) encoded;
+      for(int i = 0; i < rune_count; i++) {
+        rune_encode(&encoding_ptr, op->string[i]);
+      }
+      
+      nvgText(state->vg,
+              state->offset.x,
+              state->offset.y - (op->size * op->font->heightOffset),
+              encoded,
+              encoded + rune_count);
+      return;
+    }
     case optype_clip: {
       op_clip_t *op = (op_clip_t*) untyped_op;
       nvgScissor(state->vg,
@@ -144,6 +165,16 @@ void op_text(oplist_t *oplist, float size, Font *font, const char *string, const
   oplist_append(oplist, &op->type);
 }
 
+void op_rune_text(oplist_t *oplist, float size, Font *font, const rune_t *string, const rune_t *end) {
+  op_rune_text_t *op = arenaalloc(oplist->arena, sizeof(op_rune_text_t));
+  op->type = optype_rune_text;
+  op->size = size;
+  op->font = font;
+  op->string = string;
+  op->end = end;
+  oplist_append(oplist, &op->type);
+}
+
 void op_clip(oplist_t *oplist, float width, float height) {
   op_clip_t *op = arenaalloc(oplist->arena, sizeof(op_clip_t));
   op->type = optype_clip;
@@ -172,6 +203,28 @@ point_t text_bounds(NVGcontext *vg, float size, Font *font, const char *string, 
   nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   float bounds[4];
 	nvgTextBounds(vg, 0, 0, string, end, bounds);
+
+  return (point_t){
+    .x = bounds[2] - bounds[0],
+    .y = size,
+  };
+}
+
+point_t rune_text_bounds(NVGcontext *vg, float size, Font *font, const rune_t *string, const rune_t *end) {
+  nvgFontSize(vg, size/font->heightFactor);
+  nvgFontFaceId(vg, font->handle);
+  nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+
+  int rune_count = end - string;
+  int encoding_length = runes_encoding_length(string, rune_count);
+  char encoded[encoding_length];
+  char *encoding_ptr = (char*) encoded;
+  for(int i = 0; i < rune_count; i++) {
+    rune_encode(&encoding_ptr, string[i]);
+  }
+
+  float bounds[4];
+	nvgTextBounds(vg, 0, 0, encoded, encoded + rune_count, bounds);
 
   return (point_t){
     .x = bounds[2] - bounds[0],

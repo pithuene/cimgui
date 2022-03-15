@@ -63,6 +63,16 @@ typedef struct {
 point_t text(AppContext *app, point_t constraints, text_t *conf);
 
 typedef struct {
+  Font         *font;
+  float         size;
+  const rune_t *content;
+  const rune_t *content_end;
+  color_t       color;
+} rune_text_t;
+
+point_t rune_text(AppContext *app, point_t constraints, rune_text_t *conf);
+
+typedef struct {
   Font       *font;
   float       size;
   const char *content;

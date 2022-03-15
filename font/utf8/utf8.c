@@ -35,7 +35,7 @@ int runes_decoding_length(char *string) {
 }
 
 // Calculate how many bytes a runestring will be encoded into
-int runes_encoding_length(rune_t *runes, int length) {
+int runes_encoding_length(const rune_t *runes, int length) {
   int byte_count = 0;
   for (int i = 0; i < length; i++) {
     int rune_len = rune_length(((runes[i] & 0xFF000000) >> 24) & 0x000000FF);
