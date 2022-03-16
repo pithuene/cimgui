@@ -13,14 +13,14 @@ typedef struct {
 } widget_t;
 
 #define widget(WIDGET, ...) \
-  &(widget_t){ \
+  (widget_t){ \
     (widget_draw_t) WIDGET, \
     __VA_ARGS__ \
   }
 
 #define CONSTRAINT_NONE ((bbox_t){ .min = {0, 0}, .max = {999999, 999999}})
 
-point_t widget_draw(AppContext *context, point_t constraints, widget_t *widget);
+point_t widget_draw(AppContext *context, point_t constraints, widget_t widget);
 
 typedef struct {
   oplist_t ops;
@@ -28,7 +28,7 @@ typedef struct {
 } deferred_draw_t;
 
 // Draw widget into seperate oplist.
-deferred_draw_t widget_draw_deferred(AppContext *context, point_t constraints, widget_t *widget);
+deferred_draw_t widget_draw_deferred(AppContext *context, point_t constraints, widget_t widget);
 
 // Append the operations from a deferred draw to the appliaction oplist.
 // Can be called multiple times to perform the same draw at multiple positions.

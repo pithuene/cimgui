@@ -32,8 +32,7 @@ point_t paragraph(AppContext *app, point_t constraints, paragraph_t *conf) {
       .size = conf->size,
     };
 
-    widget_t *widget = arenaalloc(&app->ops_arena, sizeof(widget_t));
-    *widget = (widget_t){
+    widget_t widget = {
         (widget_draw_t) text,
         text_element,
     };

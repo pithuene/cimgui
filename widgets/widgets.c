@@ -1,16 +1,16 @@
 #include "widgets.h"
 
-point_t widget_draw(AppContext *app, point_t constraints, widget_t *widget) {
-  return widget->draw(app, constraints, widget->data);
+point_t widget_draw(AppContext *app, point_t constraints, widget_t widget) {
+  return widget.draw(app, constraints, widget.data);
 }
 
-deferred_draw_t widget_draw_deferred(AppContext *app, point_t constraints, widget_t *widget) {
+deferred_draw_t widget_draw_deferred(AppContext *app, point_t constraints, widget_t widget) {
   // Backup the original oplist
   oplist_t original_ops = app->oplist;
 
   // Draw widget into temporary oplist
   app->oplist = oplist_create(&app->oplist);
-  point_t dimensions = widget->draw(app, constraints, widget->data);
+  point_t dimensions = widget.draw(app, constraints, widget.data);
   deferred_draw_t res = {
     .dimensions = dimensions,
     .ops        = app->oplist,

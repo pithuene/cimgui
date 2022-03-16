@@ -110,7 +110,7 @@ point_t slider(AppContext *app, point_t constraints, slider_t *conf) {
       sprintf(valuelabel, "%d", *conf->value);
 
       deferred_draw_t value_label_draw = widget_draw_deferred(app, constraints,
-        &(widget_t){
+        (widget_t){
           (widget_draw_t) text,
           &(text_t){
           .font = conf->font,

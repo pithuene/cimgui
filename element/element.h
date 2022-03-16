@@ -23,8 +23,7 @@ typedef enum {
 } axis_alignment_t;
 
 typedef struct {
-  // TODO: This should not be a pointer.
-  widget_t        *widget;
+  widget_t         widget;
   unit_length_t    width;
   unit_length_t    height;
   axis_alignment_t x_align;

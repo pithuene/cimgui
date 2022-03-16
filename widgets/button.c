@@ -10,7 +10,7 @@ point_t button(AppContext *app, point_t constraints, button_t *conf) {
   float yPadding = 10;
 
   deferred_draw_t label_draw = widget_draw_deferred(app, constraints,
-    &(widget_t){
+    (widget_t){
       (widget_draw_t)text,
       &(text_t){
         .color   = conf->label_color,
