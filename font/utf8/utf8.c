@@ -43,7 +43,6 @@ int runes_encoding_length(const rune_t *runes, int length) {
       return -1;
     }
     byte_count += rune_len;
-    runes++;
   }
   return byte_count;
 }

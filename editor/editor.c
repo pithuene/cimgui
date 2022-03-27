@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include <assert.h>
 #include <pthread.h>
 #include <sys/stat.h>
@@ -10,7 +11,7 @@
 #include "../element/element.h"
 #include "../ops/ops.h"
 #include "../filedialog/filedialog.h"
-
+#include "../utils/logging.h"
 
 // Open a file selection dialog and import the selected markdown file.
 static void editor_open_file(editor_t *ed) {
@@ -42,43 +43,53 @@ typedef struct {
 } block_draw_data_t;
 
 typedef struct {
-  Font       *font;
-  float       font_size;
-  const char *content;
-  const char *content_end;
-  color_t     color;
-  // The index of the caret in this row. Negativ if there is none.
-  int16_t     caret;
-} editable_row_t;
+  int length;
+  rune_position_t *positions;
+} piece_rune_positions_t;
 
-point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf) {
-  op_begin_path(&app->oplist);
-  op_fill_color(&app->oplist, conf->color);
+typedef struct {
+  editor_t *ed;
+  editor_cursor_t cursor;
+  piecetable_piece_t *piece;
+  piece_rune_positions_t piece_rune_positions;
+  uint32_t start;
+  uint32_t length;
+  color_t color;
+  float font_size;
+  Font *font;
+} editable_piece_part_t;
 
-  Font *font = conf->font;
-  if (!font) {
-    font = &app->font_fallback;
-  }
+// Create a text widget from part of a piece or a complete piece.
+point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece_part_t *conf) {
+  debug_log("Rendering part of piece %p from source %s, starting at %d and going until %d \n",
+    (void *) conf->piece,
+    conf->piece->from_original ? "original" : "added",
+    conf->piece->start + conf->start,
+    conf->piece->start + conf->start + conf->length
+  );
+  rune_t *source = conf->piece->from_original ? conf->ed->original : conf->ed->added;
 
-  point_t bounds = text_bounds(app->vg, conf->font_size, font, conf->content, conf->content_end);
+  point_t text_dimensions = rune_text(app, constraints, &(rune_text_t){
+    .content     = source + conf->piece->start + conf->start,
+    .content_end = source + conf->piece->start + conf->start + conf->length,
+    .color = conf->color,
+    .size = conf->font_size,
+    .font = conf->font,
+  });
 
-  op_text(&app->oplist, conf->font_size, font, conf->content, conf->content_end);
-
-  if (conf->caret >= 0) {
-    // Caret is in this row
-    glyph_position_t glyph_positions[conf->caret + 1];
-    text_glyph_positions(
+  if (conf->cursor.piece == conf->piece
+    && conf->cursor.offset >= conf->start
+    && conf->cursor.offset < conf->start + conf->length)
+  {
+    // Cursor is in this piece part
+    point_t dimensions_upto_cursor = rune_text_bounds(
       app->vg,
       conf->font_size,
-      font,
-      conf->content,
-      conf->content + conf->caret + 1,
-      glyph_positions,
-      conf->caret + 1
+      conf->font,
+      &source[conf->piece->start + conf->cursor.piece->start],
+      &source[conf->piece->start + conf->cursor.piece->start + conf->cursor.offset]
     );
-
-    float caret_x_offset = glyph_positions[conf->caret].minx;
-    with_offset(&app->oplist, (point_t){caret_x_offset, -conf->font_size * 0.25}) {
+    with_offset(&app->oplist, (point_t){dimensions_upto_cursor.x, -conf->font_size * 0.25}) {
       rect(
         app,
         (point_t){
@@ -92,7 +103,7 @@ point_t editable_row(AppContext *app, point_t constraints, editable_row_t *conf)
     }
   }
 
-  return bounds;
+  return text_dimensions;
 }
 
 typedef struct {
@@ -104,82 +115,244 @@ typedef struct {
   editor_cursor_t cursor;
 } editable_text_t;
 
+typedef struct {
+  piecetable_piece_t *piece;
+  uint32_t            offset; // TODO: Rename this so the difference to a piecetable_piece_t offset is clear
+} pieceposition_t;
 
-point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
-  // TODO: If there is over 1k of text in a block, this will fail
-  #define BUFFER_LEN 1024
-  char buffer[BUFFER_LEN] = {0};
-  char *encoding_ptr = (char*) buffer;
-  char *caret = NULL;
+typedef struct {
+  pieceposition_t start;
+  pieceposition_t end;
+} editable_line_t;
+
+// Starting from a given position in a piece, calculates the longest part of it that will still fit into a given width.
+// Returns the pieceposition of the last rune that will fit.
+// If the remainder of the piece fits entirely, it will return the position of the last rune in that piece.
+static void find_longest_fitting_piece_part(
+  pieceposition_t start, // First rune to be rendered
+  piece_rune_positions_t positions, // Rune positions of the piece
+  float space_left, // Maximum width to occupy
+  pieceposition_t *end, // Result into which the last rendered rune is written
+  bool *row_full, // Whether the piece had to be broken up because the row was full
+  float *space_occupied // How much width the part occupied
+) {
+  *end = start;
+  float curr_width = positions.positions[end->offset].maxx - positions.positions[end->offset].minx;
+  while (curr_width < space_left && end->piece->length > end->offset + 1) {
+    float next_rune_width = positions.positions[end->offset + 1].maxx - positions.positions[end->offset + 1].minx;
+    if (curr_width + next_rune_width < space_left) {
+      // Next rune fits
+      end->offset++;
+      curr_width += next_rune_width;
+    } else {
+      // Next rune does not fit
+      break;
+    }
+  }
+  *space_occupied = curr_width;
+  *row_full = end->piece->length - 1 != end->offset;
+}
+
+// Calculate how the lines of an editable text should be broken up
+static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_line_t) *lines, float width, vec_t(piece_rune_positions_t) *piece_rune_positions) {
+  // Calculate rune positions for all pieces
   piecetable_piece_t *curr_piece = conf->first_piece;
   while (curr_piece) {
-    rune_t *source = (curr_piece->from_original)
-      ? conf->ed->original
-      : conf->ed->added;
-    for (int i = 0; i < curr_piece->length; i++) {
-      if (curr_piece == conf->cursor.piece
-        && i == conf->cursor.offset) {
-        caret = encoding_ptr;
-      }
-      assert(encoding_ptr < buffer + BUFFER_LEN);
-      const int index = curr_piece->start + i;
-      rune_encode(&encoding_ptr, source[index]);
-    }
+    rune_position_t *positions_arr = arenaalloc(&app->ops_arena, sizeof(rune_position_t) * curr_piece->length);
+    assert(positions_arr != NULL);
+    piece_rune_positions_t positions = {
+      .length = curr_piece->length,
+      .positions = positions_arr,
+    };
 
+    const rune_t *source = curr_piece->from_original ? conf->ed->original : conf->ed->added;
+    rune_text_positions(
+      app->vg,
+      conf->font_size,
+      conf->font,
+      source + curr_piece->start,
+      source + curr_piece->start + curr_piece->length,
+      positions.positions,
+      curr_piece->length
+    );
+    vecpush(*piece_rune_positions, positions);
     curr_piece = curr_piece->next;
   }
 
-  const int max_rows = 20;
-  text_line_t lines[max_rows];
-  int row_count = text_break_lines(
-    app->vg,
-    conf->font,
-    conf->font_size,
-    buffer,
-    encoding_ptr,
-    constraints.x,
-    lines,
-    max_rows
-  );
+  // Break into lines
+  float remaining_row_width = width;
+  pieceposition_t current_line_start = {
+    .piece = conf->first_piece,
+    .offset = 0,
+  };
+  pieceposition_t current_line_end = current_line_start;
 
-  element_t text_elements[row_count];
+  pieceposition_t curr_rune = current_line_start; // The next rune to be handled
+  int piece_index = 0; // Index of the current piece in the piece_rune_positions array
 
-  for (int j = 0; j < row_count; j++) {
-    editable_row_t *text_element = arenaalloc(&app->ops_arena, sizeof(editable_row_t));
-    size_t content_length = lines[j].end - lines[j].start;
-    char *content = arenaalloc(&app->ops_arena, content_length);
-    strncpy(content, lines[j].start, content_length);
+  while (1) {
+    pieceposition_t part_end;
+    bool row_full = false;
+    float part_width = 0;
+    find_longest_fitting_piece_part(
+      curr_rune,
+      (*piece_rune_positions)[piece_index],
+      remaining_row_width,
+      &part_end,
+      &row_full,
+      &part_width
+    );
+    current_line_end = part_end;
 
-    int16_t caret_idx = -1;
-    if (lines[j].start <= caret && caret <= lines[j].end) {
-      caret_idx = caret - lines[j].start;
+    if (row_full) {
+      // New row
+      // The current piece has not been fully consumed yet
+
+      // Add the line
+      editable_line_t line = (editable_line_t){
+        .start = current_line_start,
+        .end = current_line_end,
+      };
+      debug_log("Filled line %lu\n", veclen(*lines));
+      vecpush(*lines, line);
+      debug_log("Added line from %p %d to %p %d\n", (void *) line.start.piece, line.start.offset, (void *) line.end.piece, line.end.offset);
+      curr_rune = (pieceposition_t){
+        .piece = part_end.piece,
+        .offset = part_end.offset + 1,
+      };
+
+      current_line_start = curr_rune;
+      current_line_end = current_line_start;
+      remaining_row_width = width;
+    } else {
+      // The current piece has been fully consumed
+      remaining_row_width -= part_width;
+      current_line_end = part_end;
+      debug_log("Added piece to non-full line %lu\n", veclen(*lines));
+       
+      // Next piece
+      if (part_end.piece->next) {
+        curr_rune = (pieceposition_t){
+          .piece = part_end.piece->next,
+          .offset = 0,
+        };
+        piece_index++;
+      } else {
+        // No more pieces, were done.
+        // Add the last line
+        editable_line_t line = (editable_line_t){
+          .start = current_line_start,
+          .end = current_line_end,
+        };
+        debug_log("Filled last line %lu in text\n", veclen(*lines));
+        vecpush(*lines, line);
+        debug_log("Added line from %p %d to %p %d\n", (void *) line.start.piece, line.start.offset, (void *) line.end.piece, line.end.offset);
+
+        break;
+      }
     }
+  }
+}
 
-    *text_element = (editable_row_t){
-      .color = (color_t){0,0,0,255},
-      .content = content,
-      .content_end = content + content_length,
-      .font = &app->font_fallback,
+point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
+  vec_t(editable_line_t) lines = vec(editable_line_t, 16);
+  vec_t(piece_rune_positions_t) rune_text_positions = vec(piece_rune_positions_t, 16);
+  vec_t(editable_piece_part_t) parts = vec(editable_piece_part_t, 16);
+  vec_t(element_t) part_elements = vec(element_t, 16);
+
+  break_lines(app, conf, &lines, constraints.x, &rune_text_positions);
+
+  debug_log("Broke text into %lu lines\n", veclen(lines));
+
+  element_t line_elements[veclen(lines)];
+  row_t rows[veclen(lines)];
+
+  int curr_piece_index = 0;
+
+  for (int i = 0; i < veclen(lines); i++) {
+    int line_first_part_index = veclen(parts);
+    pieceposition_t curr_position = lines[i].start;
+    while (curr_position.piece && curr_position.piece != lines[i].end.piece) {
+      editable_piece_part_t part = {
+        .font = conf->font,
+        .font_size = conf->font_size,
+        .color = conf->color,
+        .cursor = conf->cursor,
+        .ed = conf->ed,
+
+        .piece = curr_position.piece,
+        .piece_rune_positions = rune_text_positions[curr_piece_index],
+        .start = curr_position.offset,
+        .length = curr_position.piece->length - curr_position.offset,
+      };
+      vecpush(parts, part);
+      element_t part_element = {
+        .widget = {
+          .draw = (widget_draw_t) editable_piece_part,
+          .data = &parts[veclen(parts) - 1],
+        }
+      };
+      vecpush(part_elements, part_element);
+
+      curr_position = (pieceposition_t){
+        .piece = curr_position.piece->next,
+        .offset = 0,
+      };
+      curr_piece_index++;
+    }
+    // Rendering the last piece of the line
+    editable_piece_part_t part = {
+      .font = conf->font,
       .font_size = conf->font_size,
-      .caret = caret_idx,
+      .color = conf->color,
+      .cursor = conf->cursor,
+      .ed = conf->ed,
+
+      .piece = curr_position.piece,
+      .piece_rune_positions = rune_text_positions[curr_piece_index],
+      .start = curr_position.offset, 
+      .length = lines[i].end.offset - curr_position.offset,
+    };
+    vecpush(parts, part);
+    element_t part_element = {
+      .widget = {
+        .draw = (widget_draw_t) editable_piece_part,
+        .data = &parts[veclen(parts) - 1],
+      }
+    };
+    vecpush(part_elements, part_element);
+
+    rows[i] = (row_t){
+      .children = (element_children_t){
+        .elements = part_elements + line_first_part_index,
+        .count = veclen(part_elements) - line_first_part_index,
+      },
     };
 
-    widget_t *widget = arenaalloc(&app->ops_arena, sizeof(widget_t));
-    *widget = (widget_t){
-        (widget_draw_t) editable_row,
-        text_element,
+    line_elements[i] = (element_t){
+      .width = {100, unit_percent},
+      .widget = {
+        .draw = (widget_draw_t) row,
+        .data = &rows[i],
+      },
     };
-
-    text_elements[j] = (element_t){.widget = widget};
   }
 
-  return column(app, constraints, &(row_t){
+  point_t dimensions = column(app, constraints, &(row_t){
     .spacing  = 6,
     .children = (element_children_t){
-      .count    = row_count,
-      .elements = text_elements,
+      .count    = veclen(lines),
+      .elements = line_elements,
     }
   });
+
+  // Cleanup
+  vecfree(lines);
+  vecfree(rune_text_positions);
+  vecfree(parts);
+  vecfree(part_elements);
+
+  return dimensions;
 }
 
 point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* data) {
@@ -376,13 +549,12 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
   block_t *curr_block = ed->first;
   int block_index = 0;
   while (curr_block) {
-    widget_t *block_widget = arenaalloc(&app->ops_arena, sizeof(widget_t));
     block_draw_data_t *draw_data = arenaalloc(&app->ops_arena, sizeof(block_draw_data_t));
     *draw_data = (block_draw_data_t){
       .ed = ed,
       .block = curr_block,
     };
-    *block_widget = (widget_t){
+    widget_t block_widget = (widget_t){
       .draw = draw_function_for_type(curr_block->type),
       .data = draw_data
     };

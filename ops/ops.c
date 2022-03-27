@@ -63,6 +63,9 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
     }
     case optype_rune_text: {
       op_rune_text_t *op = (op_rune_text_t*) untyped_op;
+
+      if (op->string == NULL) return;
+
       nvgFontSize(state->vg, op->size / op->font->heightFactor);
       nvgFontFaceId(state->vg, op->font->handle);
 	    nvgTextAlign(state->vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
@@ -79,7 +82,7 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
               state->offset.x,
               state->offset.y - (op->size * op->font->heightOffset),
               encoded,
-              encoded + rune_count);
+              encoding_ptr);
       return;
     }
     case optype_clip: {
@@ -224,7 +227,7 @@ point_t rune_text_bounds(NVGcontext *vg, float size, Font *font, const rune_t *s
   }
 
   float bounds[4];
-	nvgTextBounds(vg, 0, 0, encoded, encoded + rune_count, bounds);
+	nvgTextBounds(vg, 0, 0, encoded, encoded + encoding_length, bounds);
 
   return (point_t){
     .x = bounds[2] - bounds[0],
@@ -237,6 +240,42 @@ int text_glyph_positions(NVGcontext *vg, float size, Font *font, const char *str
   nvgFontFaceId(vg, font->handle);
   nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
   return nvgTextGlyphPositions(vg, 0, 0, string, end, (NVGglyphPosition*) positions, max_positions);
+}
+
+int rune_text_positions(NVGcontext *vg, float size, Font *font, const rune_t *content, const rune_t *content_end, rune_position_t *positions, int max_positions) {
+  nvgFontSize(vg, size/font->heightFactor);
+  nvgFontFaceId(vg, font->handle);
+  nvgTextAlign(vg,NVG_ALIGN_LEFT|NVG_ALIGN_TOP);
+
+  int rune_count = content_end - content;
+  int encoding_length = runes_encoding_length(content, rune_count);
+  char encoded[encoding_length];
+  char *encoding_ptr = (char*) encoded;
+  for(int i = 0; i < rune_count; i++) {
+    rune_encode(&encoding_ptr, content[i]);
+  }
+
+  glyph_position_t glyph_positions[max_positions];
+  int glyph_count = nvgTextGlyphPositions(
+    vg,
+    0,
+    0,
+    encoded,
+    encoded + encoding_length - 1,
+    (NVGglyphPosition*) glyph_positions,
+    max_positions
+  );
+
+  for (int i = 0; i < glyph_count; i++) {
+    positions[i] = (rune_position_t){
+      .rune = content + i,
+      .minx = glyph_positions[i].minx,
+      .maxx = glyph_positions[i].maxx,
+      .x    = glyph_positions[i].x,
+    };
+  }
+
+  return glyph_count;
 }
 
 int text_break_lines(

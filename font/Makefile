@@ -17,7 +17,7 @@ clean:
 	rm -f $(OBJS) $(RES)
 
 utf8/utf8.a: force_look
-	$(MAKE) -C utf8 PARENT_CFLAGS="$(CFLAGS)"
+	$(MAKE) -C utf8 PARENT_CFLAGS="$(PARENT_CFLAGS)"
 
 force_look:
 	true
