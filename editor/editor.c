@@ -149,8 +149,128 @@ static void find_longest_fitting_piece_part(
       break;
     }
   }
+
+  // End now is the last rune that would fit into the line.
+  // Now backtrack:
+  //  Find the last whitespace in this piece, use it as the new end
+  //  If there is no whitespace in this piece
+  //    If this is the last piece, render 
+
   *space_occupied = curr_width;
   *row_full = end->piece->length - 1 != end->offset;
+}
+
+static bool rune_is_whitespace(rune_t rune) {
+  if (rune == ' ' << 24) {
+    return true;
+  }
+  return false;
+}
+
+static pieceposition_t pieceposition_next(pieceposition_t curr) {
+  if (curr.piece->length > curr.offset + 1) {
+    return (pieceposition_t){
+      .piece = curr.piece,
+      .offset = curr.offset + 1,
+    };
+  }
+  if (curr.piece->next) {
+    return (pieceposition_t){
+      .piece = curr.piece->next,
+      .offset = 0,
+    };
+  }
+  // This is the last rune
+  return curr;
+}
+
+static pieceposition_t pieceposition_last(pieceposition_t curr) {
+  if (curr.offset > 1) {
+    return (pieceposition_t){
+      .piece = curr.piece,
+      .offset = curr.offset - 1,
+    };
+  }
+  if (curr.piece->prev) {
+    return (pieceposition_t){
+      .piece = curr.piece->prev,
+      .offset = curr.piece->prev->length - 1,
+    };
+  }
+  // This is the first rune
+  return curr;
+}
+
+static rune_t pieceposition_rune(editor_t *ed, pieceposition_t pos) {
+  const rune_t *source = pos.piece->from_original ? ed->original : ed->added;
+  return source[pos.piece->start + pos.offset];
+}
+
+static inline bool piecepositions_equal(pieceposition_t a, pieceposition_t b) {
+  return a.piece == b.piece && a.offset == b.offset;
+}
+
+// Returns the pieceposition_t at which the next word ends
+static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start) {
+  pieceposition_t curr = start;
+  pieceposition_t next;
+
+  // Skip initial whitespace
+  while (rune_is_whitespace(pieceposition_rune(ed, curr))) {
+    next = pieceposition_next(curr);
+    if (piecepositions_equal(next, curr)) { // Position didn't move => This is the last rune
+      return curr;
+    }
+    curr = next;
+  }
+
+  // Skip over the next word
+  while (!rune_is_whitespace(pieceposition_rune(ed, curr))) {
+    next = pieceposition_next(curr);
+    if (piecepositions_equal(next, curr)) { // Position didn't move => This is the last rune
+      return curr;
+    }
+    curr = next;
+  }
+
+  return pieceposition_last(curr); // Move curr back to the last non-whitespace rune
+}
+
+static float calculate_word_width(
+  pieceposition_t start,
+  pieceposition_t end,
+  int *piece_idx,
+  vec_t(piece_rune_positions_t) *piece_rune_positions
+) {
+  float width = 0;
+  //piece_rune_positions_t *curr_positions = &(*piece_rune_positions)[start_piece_idx];
+  
+  if (start.piece == end.piece) {
+    for (int i = start.offset; i <= end.offset; i++) {
+      width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+    }
+    return width;
+  }
+
+  // End of start piece
+  for (int i = start.offset; i <= start.piece->length; i++) {
+    width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+  }
+  // Handle all middle pieces
+  piecetable_piece_t *curr_piece = start.piece->next;
+  (*piece_idx)++;
+  while (curr_piece && curr_piece != end.piece) {
+    for (int i = 0; i <= (*piece_rune_positions)[*piece_idx].length; i++) {
+      width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+    }
+    curr_piece = curr_piece->next;
+    (*piece_idx)++;
+  }
+  // Handle start of end piece
+  for (int i = 0; i <= end.offset; i++) {
+    width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+  }
+  return width;
 }
 
 // Calculate how the lines of an editable text should be broken up
@@ -191,65 +311,44 @@ static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_l
   int piece_index = 0; // Index of the current piece in the piece_rune_positions array
 
   while (1) {
-    pieceposition_t part_end;
-    bool row_full = false;
-    float part_width = 0;
-    find_longest_fitting_piece_part(
-      curr_rune,
-      (*piece_rune_positions)[piece_index],
-      remaining_row_width,
-      &part_end,
-      &row_full,
-      &part_width
-    );
-    current_line_end = part_end;
-
-    if (row_full) {
-      // New row
-      // The current piece has not been fully consumed yet
-
-      // Add the line
+    if (!curr_rune.piece->next && curr_rune.offset >= curr_rune.piece->length - 1) {
+      // End of text reached
       editable_line_t line = (editable_line_t){
         .start = current_line_start,
         .end = current_line_end,
       };
-      debug_log("Filled line %lu\n", veclen(*lines));
       vecpush(*lines, line);
-      debug_log("Added line from %p %d to %p %d\n", (void *) line.start.piece, line.start.offset, (void *) line.end.piece, line.end.offset);
-      curr_rune = (pieceposition_t){
-        .piece = part_end.piece,
-        .offset = part_end.offset + 1,
+      break;
+    }
+
+    pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune);
+    float next_word_width = calculate_word_width(curr_rune, next_word_end, &piece_index, piece_rune_positions);
+
+    // TODO: What if the word is longer than a line
+
+    if (remaining_row_width >= next_word_width) { // Next word fits in this line
+      current_line_end = next_word_end;
+      remaining_row_width -= next_word_width;
+      curr_rune = pieceposition_next(current_line_end);
+      curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
+      if (curr_rune.piece != current_line_end.piece) { // Moved to next piece
+        piece_index++;
+      }
+    } else {
+      // New row
+      editable_line_t line = (editable_line_t){
+        .start = current_line_start,
+        .end = current_line_end,
       };
+      vecpush(*lines, line);
 
       current_line_start = curr_rune;
-      current_line_end = current_line_start;
-      remaining_row_width = width;
-    } else {
-      // The current piece has been fully consumed
-      remaining_row_width -= part_width;
-      current_line_end = part_end;
-      debug_log("Added piece to non-full line %lu\n", veclen(*lines));
-       
-      // Next piece
-      if (part_end.piece->next) {
-        curr_rune = (pieceposition_t){
-          .piece = part_end.piece->next,
-          .offset = 0,
-        };
+      current_line_end = next_word_end;
+      curr_rune = pieceposition_next(next_word_end);
+      if (curr_rune.piece != next_word_end.piece) { // Moved to next piece
         piece_index++;
-      } else {
-        // No more pieces, were done.
-        // Add the last line
-        editable_line_t line = (editable_line_t){
-          .start = current_line_start,
-          .end = current_line_end,
-        };
-        debug_log("Filled last line %lu in text\n", veclen(*lines));
-        vecpush(*lines, line);
-        debug_log("Added line from %p %d to %p %d\n", (void *) line.start.piece, line.start.offset, (void *) line.end.piece, line.end.offset);
-
-        break;
       }
+      remaining_row_width = width - next_word_width;
     }
   }
 }
