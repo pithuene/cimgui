@@ -243,7 +243,6 @@ static float calculate_word_width(
   vec_t(piece_rune_positions_t) *piece_rune_positions
 ) {
   float width = 0;
-  //piece_rune_positions_t *curr_positions = &(*piece_rune_positions)[start_piece_idx];
   
   if (start.piece == end.piece) {
     for (int i = start.offset; i <= end.offset; i++) {
@@ -253,29 +252,113 @@ static float calculate_word_width(
   }
 
   // End of start piece
-  for (int i = start.offset; i <= start.piece->length; i++) {
+  for (int i = start.offset; i < start.piece->length; i++) {
+    assert(i < (*piece_rune_positions)[*piece_idx].length);
     width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
   }
   // Handle all middle pieces
   piecetable_piece_t *curr_piece = start.piece->next;
   (*piece_idx)++;
   while (curr_piece && curr_piece != end.piece) {
-    for (int i = 0; i <= (*piece_rune_positions)[*piece_idx].length; i++) {
+    for (int i = 0; i < (*piece_rune_positions)[*piece_idx].length; i++) {
+      assert(i < (*piece_rune_positions)[*piece_idx].length);
       width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
     }
     curr_piece = curr_piece->next;
     (*piece_idx)++;
   }
+
+  assert(curr_piece != NULL);
+  assert(curr_piece == end.piece);
+
   // Handle start of end piece
   for (int i = 0; i <= end.offset; i++) {
+    assert(i < (*piece_rune_positions)[*piece_idx].length);
     width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
   }
   return width;
 }
 
-// Calculate how the lines of an editable text should be broken up
-static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_line_t) *lines, float width, vec_t(piece_rune_positions_t) *piece_rune_positions) {
+static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t line, editable_piece_part_t part_template) {
+  pieceposition_t curr_position = line.start;
+  // The width of all previous parts in this line. Used for offset calculation.
+  float x_offset = 0;
+  while (curr_position.piece && curr_position.piece != line.end.piece) {
+    editable_piece_part_t part = part_template;
+    part.piece = curr_position.piece;
+
+    // TODO: This is currently done twice, which shouldn't be necessary
+    // Calculate rune positions
+    const rune_t *source = part.piece->from_original ? ed->original : ed->added;
+    rune_position_t positions_buf[part.piece->length];
+    piece_rune_positions_t positions = {
+      .positions = positions_buf,
+    };
+    positions.length = rune_text_positions(
+      app->vg,
+      part_template.font_size,
+      part_template.font,
+      source + part.piece->start,
+      source + part.piece->start + part.piece->length,
+      positions_buf,
+      part.piece->length
+    );
+    part.piece_rune_positions = positions;
+
+    part.start = curr_position.offset;
+    part.length = curr_position.piece->length - curr_position.offset;
+
+    // TODO: Add horizontal offset for part
+    point_t part_offset = {x_offset, 0};
+    with_offset(&app->oplist, part_offset){
+      x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
+    };
+
+    curr_position = (pieceposition_t){
+      .piece = curr_position.piece->next,
+      .offset = 0,
+    };
+  }
+
+  assert(curr_position.piece != NULL);
+  assert(curr_position.piece == line.end.piece);
+
+  // Rendering the last piece of the line
+  editable_piece_part_t part = part_template;
+  part.piece = curr_position.piece;
+
+  // TODO: This is currently done twice, which shouldn't be necessary
+  // Calculate rune positions
+  const rune_t *source = part.piece->from_original ? ed->original : ed->added;
+  rune_position_t positions_buf[part.piece->length];
+  piece_rune_positions_t positions = {
+    .positions = positions_buf,
+  };
+  positions.length = rune_text_positions(
+    app->vg,
+    part_template.font_size,
+    part_template.font,
+    source + part.piece->start,
+    source + part.piece->start + part.piece->length,
+    positions_buf,
+    part.piece->length
+  );
+  part.piece_rune_positions = positions;
+
+  part.start = curr_position.offset;
+  part.length = line.end.offset - curr_position.offset + 1;
+
+  // TODO: Add horizontal offset for part
+  point_t part_offset = {x_offset, 0};
+  with_offset(&app->oplist, part_offset){
+    x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
+  }
+}
+
+point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
   // Calculate rune positions for all pieces
+  // TODO: Can we get rid of this heap allocated vector?
+  vec_t(piece_rune_positions_t) piece_rune_positions = vec(piece_rune_positions_t, 8);
   piecetable_piece_t *curr_piece = conf->first_piece;
   while (curr_piece) {
     rune_position_t *positions_arr = arenaalloc(&app->ops_arena, sizeof(rune_position_t) * curr_piece->length);
@@ -295,12 +378,20 @@ static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_l
       positions.positions,
       curr_piece->length
     );
-    vecpush(*piece_rune_positions, positions);
+    vecpush(piece_rune_positions, positions);
     curr_piece = curr_piece->next;
   }
 
+  editable_piece_part_t part_template = {
+    .font = conf->font,
+    .font_size = conf->font_size,
+    .color = conf->color,
+    .cursor = conf->cursor,
+    .ed = conf->ed,
+  };
+
   // Break into lines
-  float remaining_row_width = width;
+  float remaining_row_width = constraints.x;
   pieceposition_t current_line_start = {
     .piece = conf->first_piece,
     .offset = 0,
@@ -310,19 +401,33 @@ static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_l
   pieceposition_t curr_rune = current_line_start; // The next rune to be handled
   int piece_index = 0; // Index of the current piece in the piece_rune_positions array
 
-  while (1) {
+  // Number of lines above the current one. Used for offset calculation.
+  int lines_drawn = 0;
+
+  while (1) { // Loop over words
     if (!curr_rune.piece->next && curr_rune.offset >= curr_rune.piece->length - 1) {
       // End of text reached
-      editable_line_t line = (editable_line_t){
-        .start = current_line_start,
-        .end = current_line_end,
-      };
-      vecpush(*lines, line);
+      with_offset(&app->oplist, (point_t){0, lines_drawn * conf->font_size}) {
+        draw_editable_line(app, conf->ed, (editable_line_t){
+          .start = current_line_start,
+          .end = current_line_end,
+        }, part_template);
+      }
+      lines_drawn++;
+
       break;
     }
 
+    /*if (curr_rune.piece->prev || curr_rune.offset > 0) {
+      pieceposition_t next = pieceposition_next(curr_rune);
+      if (next.piece != curr_rune.piece) {
+        piece_index++;
+      }
+      curr_rune = next;
+    }*/
+
     pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune);
-    float next_word_width = calculate_word_width(curr_rune, next_word_end, &piece_index, piece_rune_positions);
+    float next_word_width = calculate_word_width(curr_rune, next_word_end, &piece_index, &piece_rune_positions);
 
     // TODO: What if the word is longer than a line
 
@@ -336,11 +441,13 @@ static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_l
       }
     } else {
       // New row
-      editable_line_t line = (editable_line_t){
-        .start = current_line_start,
-        .end = current_line_end,
-      };
-      vecpush(*lines, line);
+      with_offset(&app->oplist, (point_t){0, lines_drawn * conf->font_size}) {
+        draw_editable_line(app, conf->ed, (editable_line_t){
+          .start = current_line_start,
+          .end = current_line_end,
+        }, part_template);
+      }
+      lines_drawn++;
 
       current_line_start = curr_rune;
       current_line_end = next_word_end;
@@ -348,110 +455,16 @@ static void break_lines(AppContext *app, editable_text_t *conf, vec_t(editable_l
       if (curr_rune.piece != next_word_end.piece) { // Moved to next piece
         piece_index++;
       }
-      remaining_row_width = width - next_word_width;
+      remaining_row_width = constraints.x - next_word_width;
     }
   }
-}
 
-point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
-  vec_t(editable_line_t) lines = vec(editable_line_t, 16);
-  vec_t(piece_rune_positions_t) rune_text_positions = vec(piece_rune_positions_t, 16);
-  vec_t(editable_piece_part_t) parts = vec(editable_piece_part_t, 16);
-  vec_t(element_t) part_elements = vec(element_t, 16);
+  vecfree(piece_rune_positions);
 
-  break_lines(app, conf, &lines, constraints.x, &rune_text_positions);
-
-  debug_log("Broke text into %lu lines\n", veclen(lines));
-
-  element_t line_elements[veclen(lines)];
-  row_t rows[veclen(lines)];
-
-  int curr_piece_index = 0;
-
-  for (int i = 0; i < veclen(lines); i++) {
-    int line_first_part_index = veclen(parts);
-    pieceposition_t curr_position = lines[i].start;
-    while (curr_position.piece && curr_position.piece != lines[i].end.piece) {
-      editable_piece_part_t part = {
-        .font = conf->font,
-        .font_size = conf->font_size,
-        .color = conf->color,
-        .cursor = conf->cursor,
-        .ed = conf->ed,
-
-        .piece = curr_position.piece,
-        .piece_rune_positions = rune_text_positions[curr_piece_index],
-        .start = curr_position.offset,
-        .length = curr_position.piece->length - curr_position.offset,
-      };
-      vecpush(parts, part);
-      element_t part_element = {
-        .widget = {
-          .draw = (widget_draw_t) editable_piece_part,
-          .data = &parts[veclen(parts) - 1],
-        }
-      };
-      vecpush(part_elements, part_element);
-
-      curr_position = (pieceposition_t){
-        .piece = curr_position.piece->next,
-        .offset = 0,
-      };
-      curr_piece_index++;
-    }
-    // Rendering the last piece of the line
-    editable_piece_part_t part = {
-      .font = conf->font,
-      .font_size = conf->font_size,
-      .color = conf->color,
-      .cursor = conf->cursor,
-      .ed = conf->ed,
-
-      .piece = curr_position.piece,
-      .piece_rune_positions = rune_text_positions[curr_piece_index],
-      .start = curr_position.offset, 
-      .length = lines[i].end.offset - curr_position.offset,
-    };
-    vecpush(parts, part);
-    element_t part_element = {
-      .widget = {
-        .draw = (widget_draw_t) editable_piece_part,
-        .data = &parts[veclen(parts) - 1],
-      }
-    };
-    vecpush(part_elements, part_element);
-
-    rows[i] = (row_t){
-      .children = (element_children_t){
-        .elements = part_elements + line_first_part_index,
-        .count = veclen(part_elements) - line_first_part_index,
-      },
-    };
-
-    line_elements[i] = (element_t){
-      .width = {100, unit_percent},
-      .widget = {
-        .draw = (widget_draw_t) row,
-        .data = &rows[i],
-      },
-    };
-  }
-
-  point_t dimensions = column(app, constraints, &(row_t){
-    .spacing  = 6,
-    .children = (element_children_t){
-      .count    = veclen(lines),
-      .elements = line_elements,
-    }
-  });
-
-  // Cleanup
-  vecfree(lines);
-  vecfree(rune_text_positions);
-  vecfree(parts);
-  vecfree(part_elements);
-
-  return dimensions;
+  return (point_t){
+    .x = constraints.x,
+    .y = lines_drawn * conf->font_size,
+  };
 }
 
 point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* data) {
@@ -630,6 +643,9 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
         } else if (keyevent.key == GLFW_KEY_O && keyevent.mods & GLFW_MOD_CONTROL) {
           pthread_t file_open_thread;
           pthread_create(&file_open_thread, NULL, (void *(*)(void *)) editor_open_file, (void *) ed);
+        } else if (keyevent.key == GLFW_KEY_H && keyevent.mods & GLFW_MOD_CONTROL) {
+          printf("Checking editor health:\n");
+          editor_check_health(ed);
         } else if (keyevent.key == GLFW_KEY_S && keyevent.mods & GLFW_MOD_CONTROL) {
           editor_export_markdown(ed, stdout);
         } else if (keyevent.key == GLFW_KEY_PAGE_UP) {

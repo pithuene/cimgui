@@ -85,6 +85,9 @@ piecetable_piece_t *editor_create_new_blockterminator(editor_t *ed);
 void editor_import_markdown(editor_t *ed, const char *markdown);
 void editor_export_markdown(editor_t *ed, FILE *output);
 
+// For debugging. Checks that all links in the piecetable structure are healthy.
+void editor_check_health(editor_t *ed);
+
 // Create a new paragraph block. The block must still be linked into the list.
 block_paragraph_t *editor_create_block_paragraph(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last);
 

@@ -319,6 +319,14 @@ void editor_block_check_health(block_t *block) {
   }
 }
 
+void editor_check_health(editor_t *ed) {
+  block_t *curr_block = ed->first;
+  while (curr_block) {
+    editor_block_check_health(curr_block);
+    curr_block = curr_block->next;
+  }
+}
+
 // Change the type of a block by replacing it with another one.
 // The piecetable pieces from the old block are put into the new one,
 // the new block is inserted where the old block was
