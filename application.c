@@ -94,7 +94,7 @@ struct AppContext *application_create(void) {
 
   // TODO: It should be easier to use a sensible default like pagesize
   state->event_arena = new_arena_allocator(getpagesize() - sizeof(size_t));
-  state->ops_arena = new_arena_allocator(4 * getpagesize() - sizeof(size_t));
+  state->ops_arena = new_arena_allocator(16 * getpagesize() - sizeof(size_t));
 
   state->eventqueue = (EventQueue){
     .arena = &state->event_arena,

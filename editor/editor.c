@@ -113,6 +113,7 @@ typedef struct {
   piecetable_piece_t *first_piece;
   color_t color;
   editor_cursor_t cursor;
+  float line_spacing;
 } editable_text_t;
 
 typedef struct {
@@ -308,7 +309,6 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
     part.start = curr_position.offset;
     part.length = curr_position.piece->length - curr_position.offset;
 
-    // TODO: Add horizontal offset for part
     point_t part_offset = {x_offset, 0};
     with_offset(&app->oplist, part_offset){
       x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
@@ -348,7 +348,6 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
   part.start = curr_position.offset;
   part.length = line.end.offset - curr_position.offset + 1;
 
-  // TODO: Add horizontal offset for part
   point_t part_offset = {x_offset, 0};
   with_offset(&app->oplist, part_offset){
     x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
@@ -407,7 +406,7 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
   while (1) { // Loop over words
     if (!curr_rune.piece->next && curr_rune.offset >= curr_rune.piece->length - 1) {
       // End of text reached
-      with_offset(&app->oplist, (point_t){0, lines_drawn * conf->font_size}) {
+      with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
         draw_editable_line(app, conf->ed, (editable_line_t){
           .start = current_line_start,
           .end = current_line_end,
@@ -441,7 +440,7 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       }
     } else {
       // New row
-      with_offset(&app->oplist, (point_t){0, lines_drawn * conf->font_size}) {
+      with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
         draw_editable_line(app, conf->ed, (editable_line_t){
           .start = current_line_start,
           .end = current_line_end,
@@ -463,7 +462,7 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
 
   return (point_t){
     .x = constraints.x,
-    .y = lines_drawn * conf->font_size,
+    .y = lines_drawn * (conf->font_size + conf->line_spacing),
   };
 }
 
@@ -475,6 +474,7 @@ point_t draw_paragraph(AppContext *app, point_t constraints, block_draw_data_t* 
     .font = &app->font_fallback,
     .font_size = 12,
     .cursor = data->ed->cursor,
+    .line_spacing = 12,
   });
 }
 
@@ -501,6 +501,7 @@ point_t draw_heading(AppContext *app, point_t constraints, block_draw_data_t* da
     .font = &app->font_fallback,
     .font_size = font_sizes[level],
     .cursor = data->ed->cursor,
+    .line_spacing = font_sizes[level],
   });
 }
 
