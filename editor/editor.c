@@ -82,14 +82,9 @@ point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece
     && conf->cursor.offset < conf->start + conf->length)
   {
     // Cursor is in this piece part
-    point_t dimensions_upto_cursor = rune_text_bounds(
-      app->vg,
-      conf->font_size,
-      conf->font,
-      &source[conf->piece->start + conf->cursor.piece->start],
-      &source[conf->piece->start + conf->cursor.piece->start + conf->cursor.offset]
-    );
-    with_offset(&app->oplist, (point_t){dimensions_upto_cursor.x, -conf->font_size * 0.25}) {
+    assert(conf->length <= conf->piece_rune_positions.length);
+    assert(conf->cursor.offset < conf->piece_rune_positions.length);
+    with_offset(&app->oplist, (point_t){conf->piece_rune_positions.positions[conf->cursor.offset].minx, -conf->font_size * 0.25}) {
       rect(
         app,
         (point_t){
@@ -300,11 +295,12 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
       part_template.font_size,
       part_template.font,
       source + part.piece->start,
-      source + part.piece->start + part.piece->length,
+      source + part.piece->start + part.piece->length + 1,
       positions_buf,
       part.piece->length
     );
     part.piece_rune_positions = positions;
+    assert(positions.length == part.piece->length);
 
     part.start = curr_position.offset;
     part.length = curr_position.piece->length - curr_position.offset;
@@ -339,11 +335,12 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
     part_template.font_size,
     part_template.font,
     source + part.piece->start,
-    source + part.piece->start + part.piece->length,
+    source + part.piece->start + part.piece->length + 1,
     positions_buf,
     part.piece->length
   );
   part.piece_rune_positions = positions;
+  assert(positions.length == part.piece->length);
 
   part.start = curr_position.offset;
   part.length = line.end.offset - curr_position.offset + 1;
