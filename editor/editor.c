@@ -156,7 +156,14 @@ static void find_longest_fitting_piece_part(
   *row_full = end->piece->length - 1 != end->offset;
 }
 
-static bool rune_is_whitespace(rune_t rune) {
+static inline bool rune_is_newline(rune_t rune) {
+  if (rune == '\n' << 24) {
+    return true;
+  }
+  return false;
+}
+
+static inline bool rune_is_whitespace(rune_t rune) {
   if (rune == ' ' << 24) {
     return true;
   }
@@ -207,7 +214,8 @@ static inline bool piecepositions_equal(pieceposition_t a, pieceposition_t b) {
 }
 
 // Returns the pieceposition_t at which the next word ends
-static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start) {
+// Also returns if rune after the next word is a newline
+static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, bool *new_line) {
   pieceposition_t curr = start;
   pieceposition_t next;
 
@@ -221,7 +229,7 @@ static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start) {
   }
 
   // Skip over the next word
-  while (!rune_is_whitespace(pieceposition_rune(ed, curr))) {
+  while (!rune_is_whitespace(pieceposition_rune(ed, curr)) && !rune_is_newline(pieceposition_rune(ed, curr))) {
     next = pieceposition_next(curr);
     if (piecepositions_equal(next, curr)) { // Position didn't move => This is the last rune
       return curr;
@@ -229,49 +237,127 @@ static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start) {
     curr = next;
   }
 
+  if (pieceposition_rune(ed, curr) == '\n' << 24) { // Newline after word
+    printf("Newline encountered\n");
+    *new_line = true;
+  } else {
+    *new_line = false;
+  }
+
   return pieceposition_last(curr); // Move curr back to the last non-whitespace rune
 }
 
-static float calculate_word_width(
-  pieceposition_t start,
-  pieceposition_t end,
-  int *piece_idx,
-  vec_t(piece_rune_positions_t) *piece_rune_positions
+static inline void calculate_piece_rune_positions(
+  AppContext *app,
+  float font_size,
+  Font *font,
+  editor_t *ed,
+  piecetable_piece_t *piece,
+  rune_position_t *positions_buf,
+  piece_rune_positions_t *positions
 ) {
+  const rune_t *source = piece->from_original ? ed->original : ed->added;
+  int length = rune_text_positions(
+    app->vg,
+    font_size,
+    font,
+    source + piece->start,
+    source + piece->start + piece->length,
+    positions_buf,
+    piece->length
+  );
+  *positions = (piece_rune_positions_t){
+    .positions = positions_buf,
+    .length = length,
+  };
+}
+
+static float calculate_word_width(
+  AppContext *app,
+  float font_size,
+  Font *font,
+  editor_t *ed,
+  pieceposition_t start,
+  pieceposition_t end
+) {
+  printf("Calculating word width from %p %d to %p %d\n", (void*) start.piece, start.offset, (void*) end.piece, end.offset);
   float width = 0;
   
+  // Word in a single piece
   if (start.piece == end.piece) {
-    for (int i = start.offset; i <= end.offset; i++) {
-      width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
-    }
+    piece_rune_positions_t positions = {0};
+    rune_position_t positions_buf[start.piece->length];
+    calculate_piece_rune_positions(
+      app,
+      font_size,
+      font,
+      ed,
+      start.piece,
+      positions_buf,
+      &positions
+    );
+    assert(positions.length > end.offset);
+    width += positions.positions[end.offset].maxx - positions.positions[start.offset].minx;
     return width;
   }
 
-  // End of start piece
-  for (int i = start.offset; i < start.piece->length; i++) {
-    assert(i < (*piece_rune_positions)[*piece_idx].length);
-    width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+  /* End of start piece */ {
+    piece_rune_positions_t positions = {0};
+    rune_position_t positions_buf[start.piece->length];
+    calculate_piece_rune_positions(
+      app,
+      font_size,
+      font,
+      ed,
+      start.piece,
+      positions_buf,
+      &positions
+    );
+    assert(positions.length > start.piece->length - 1);
+    width += positions.positions[start.piece->length - 1].maxx - positions.positions[start.offset].minx;
   }
+
   // Handle all middle pieces
   piecetable_piece_t *curr_piece = start.piece->next;
-  (*piece_idx)++;
   while (curr_piece && curr_piece != end.piece) {
-    for (int i = 0; i < (*piece_rune_positions)[*piece_idx].length; i++) {
-      assert(i < (*piece_rune_positions)[*piece_idx].length);
-      width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
-    }
+    piece_rune_positions_t positions = {0};
+    rune_position_t positions_buf[curr_piece->length];
+    calculate_piece_rune_positions(
+      app,
+      font_size,
+      font,
+      ed,
+      curr_piece,
+      positions_buf,
+      &positions
+    );
+    assert(positions.length > curr_piece->length - 1);
+    width += positions.positions[curr_piece->length - 1].maxx;
+
     curr_piece = curr_piece->next;
-    (*piece_idx)++;
   }
 
-  assert(curr_piece != NULL);
+  editor_check_health(ed);
+  // End piece is not reachable from start piece
   assert(curr_piece == end.piece);
+  assert(curr_piece != NULL);
 
-  // Handle start of end piece
-  for (int i = 0; i <= end.offset; i++) {
-    assert(i < (*piece_rune_positions)[*piece_idx].length);
-    width += (*piece_rune_positions)[*piece_idx].positions[i].maxx - (*piece_rune_positions)[*piece_idx].positions[i].minx;
+  /* Handle start of end piece */ {
+    piece_rune_positions_t positions = {0};
+    rune_position_t positions_buf[end.piece->length];
+    calculate_piece_rune_positions(
+      app,
+      font_size,
+      font,
+      ed,
+      end.piece,
+      positions_buf,
+      &positions
+    );
+    assert(positions.length > end.piece->length - 1);
+    width += positions.positions[end.offset].maxx;
   }
+
   return width;
 }
 
@@ -283,24 +369,17 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
     editable_piece_part_t part = part_template;
     part.piece = curr_position.piece;
 
-    // TODO: This is currently done twice, which shouldn't be necessary
-    // Calculate rune positions
-    const rune_t *source = part.piece->from_original ? ed->original : ed->added;
     rune_position_t positions_buf[part.piece->length];
-    piece_rune_positions_t positions = {
-      .positions = positions_buf,
-    };
-    positions.length = rune_text_positions(
-      app->vg,
+    calculate_piece_rune_positions(
+      app,
       part_template.font_size,
       part_template.font,
-      source + part.piece->start,
-      source + part.piece->start + part.piece->length + 1,
+      ed,
+      part.piece,
       positions_buf,
-      part.piece->length
+      &part.piece_rune_positions
     );
-    part.piece_rune_positions = positions;
-    assert(positions.length == part.piece->length);
+    assert(part.piece_rune_positions.length == part.piece->length);
 
     part.start = curr_position.offset;
     part.length = curr_position.piece->length - curr_position.offset;
@@ -323,24 +402,18 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
   editable_piece_part_t part = part_template;
   part.piece = curr_position.piece;
 
-  // TODO: This is currently done twice, which shouldn't be necessary
-  // Calculate rune positions
-  const rune_t *source = part.piece->from_original ? ed->original : ed->added;
   rune_position_t positions_buf[part.piece->length];
-  piece_rune_positions_t positions = {
-    .positions = positions_buf,
-  };
-  positions.length = rune_text_positions(
-    app->vg,
+  calculate_piece_rune_positions(
+    app,
     part_template.font_size,
     part_template.font,
-    source + part.piece->start,
-    source + part.piece->start + part.piece->length + 1,
+    ed,
+    part.piece,
     positions_buf,
-    part.piece->length
+    &part.piece_rune_positions
   );
-  part.piece_rune_positions = positions;
-  assert(positions.length == part.piece->length);
+
+  assert(part.piece_rune_positions.length == part.piece->length);
 
   part.start = curr_position.offset;
   part.length = line.end.offset - curr_position.offset + 1;
@@ -365,7 +438,7 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
     };
 
     const rune_t *source = curr_piece->from_original ? conf->ed->original : conf->ed->added;
-    rune_text_positions(
+    positions.length = rune_text_positions(
       app->vg,
       conf->font_size,
       conf->font,
@@ -414,16 +487,16 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       break;
     }
 
-    /*if (curr_rune.piece->prev || curr_rune.offset > 0) {
-      pieceposition_t next = pieceposition_next(curr_rune);
-      if (next.piece != curr_rune.piece) {
-        piece_index++;
-      }
-      curr_rune = next;
-    }*/
-
-    pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune);
-    float next_word_width = calculate_word_width(curr_rune, next_word_end, &piece_index, &piece_rune_positions);
+    bool new_line = false;
+    pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune, &new_line);
+    float next_word_width = calculate_word_width(
+      app,
+      conf->font_size,
+      conf->font,
+      conf->ed,
+      curr_rune,
+      next_word_end
+    );
 
     // TODO: What if the word is longer than a line
 
@@ -443,8 +516,8 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
           .end = current_line_end,
         }, part_template);
       }
-      lines_drawn++;
 
+      lines_drawn++;
       current_line_start = curr_rune;
       current_line_end = next_word_end;
       curr_rune = pieceposition_next(next_word_end);
@@ -453,13 +526,43 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       }
       remaining_row_width = constraints.x - next_word_width;
     }
+
+    if (new_line) {
+      // New row
+      with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
+        draw_editable_line(app, conf->ed, (editable_line_t){
+          .start = current_line_start,
+          .end = current_line_end,
+        }, part_template);
+      }
+
+      lines_drawn++;
+
+      // Move to the newline rune
+      curr_rune = pieceposition_next(next_word_end);
+      assert(pieceposition_rune(conf->ed, curr_rune) == '\n' << 24);
+      if (curr_rune.piece != next_word_end.piece) { // Moved to next piece
+        piece_index++;
+      }
+
+      // Move past the newline rune
+      piecetable_piece_t *old_piece = curr_rune.piece;
+      curr_rune = pieceposition_next(curr_rune);
+      if (curr_rune.piece != old_piece) { // Moved to next piece
+        piece_index++;
+      }
+
+      current_line_start = curr_rune;
+      current_line_end = curr_rune;
+      remaining_row_width = constraints.x;
+    }
   }
 
   vecfree(piece_rune_positions);
 
   return (point_t){
     .x = constraints.x,
-    .y = lines_drawn * (conf->font_size + conf->line_spacing),
+    .y = lines_drawn * conf->font_size + (lines_drawn - 1) * conf->line_spacing,
   };
 }
 
@@ -534,6 +637,7 @@ point_t draw_bullet(AppContext *app, point_t constraints, block_draw_data_t* dat
             .font = &app->font_fallback,
             .font_size = 12,
             .cursor = data->ed->cursor,
+            .line_spacing = 12,
           })
         }
     ),

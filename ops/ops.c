@@ -261,7 +261,7 @@ int rune_text_positions(NVGcontext *vg, float size, Font *font, const rune_t *co
     0,
     0,
     encoded,
-    encoded + encoding_length - 1,
+    encoded + encoding_length,
     (NVGglyphPosition*) glyph_positions,
     max_positions
   );

@@ -378,9 +378,9 @@ void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor) {
             cursor->block->last_piece
           );
 
-          editor_delete_block(ed, cursor->block);
-
+          block_t *old_block = cursor->block;
           cursor->block = cursor->block->prev;
+          editor_delete_block(ed, old_block);
         }
       }
     }

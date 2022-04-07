@@ -187,6 +187,7 @@ int text_break_lines(
   int max_rows
 );
 
+// TODO: The fact, that this is 1. evaluated twice and 2. __VA_ARGS__ can potentially change during execution, makes this very confusing
 #define with_offset(OPLIST, ...) for (         \
   int _defer_i ##__LINE__ = (op_offset((OPLIST), (__VA_ARGS__)), 0); \
   !_defer_i ## __LINE__;                \
