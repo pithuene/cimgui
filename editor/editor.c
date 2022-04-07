@@ -84,7 +84,8 @@ point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece
     // Cursor is in this piece part
     assert(conf->length <= conf->piece_rune_positions.length);
     assert(conf->cursor.offset < conf->piece_rune_positions.length);
-    with_offset(&app->oplist, (point_t){conf->piece_rune_positions.positions[conf->cursor.offset].minx, -conf->font_size * 0.25}) {
+    float cursor_x_offset = conf->piece_rune_positions.positions[conf->cursor.offset].minx - conf->piece_rune_positions.positions[conf->start].minx;
+    with_offset(&app->oplist, (point_t){cursor_x_offset, -conf->font_size * 0.25}) {
       rect(
         app,
         (point_t){
@@ -180,9 +181,16 @@ static inline bool piecepositions_equal(pieceposition_t a, pieceposition_t b) {
 
 // Returns the pieceposition_t at which the next word ends
 // Also returns if rune after the next word is a newline
-static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, bool *new_line) {
+// and if the word is empty (if there are multiple newlines, the words in between have no width), in this case the end is invalid.
+static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, bool *new_line, bool *word_empty) {
   pieceposition_t curr = start;
   pieceposition_t next;
+
+  if (rune_is_newline(pieceposition_rune(ed, start))) {
+    *new_line = true;
+    *word_empty = true;
+    return start;
+  }
 
   // Skip initial whitespace
   while (rune_is_whitespace(pieceposition_rune(ed, curr))) {
@@ -245,7 +253,6 @@ static float calculate_word_width(
   pieceposition_t start,
   pieceposition_t end
 ) {
-  printf("Calculating word width from %p %d to %p %d\n", (void*) start.piece, start.offset, (void*) end.piece, end.offset);
   float width = 0;
   
   // Word in a single piece
@@ -426,56 +433,64 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
     }
 
     bool new_line = false;
-    pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune, &new_line);
-    float next_word_width = calculate_word_width(
-      app,
-      conf->font_size,
-      conf->font,
-      conf->ed,
-      curr_rune,
-      next_word_end
-    );
+    bool word_empty = false;
+    pieceposition_t next_word_end = find_next_word_end(conf->ed, curr_rune, &new_line, &word_empty);
 
     // TODO: What if the word is longer than a line
 
-    if (remaining_row_width >= next_word_width) { // Next word fits in this line
-      current_line_end = next_word_end;
-      remaining_row_width -= next_word_width;
-      curr_rune = pieceposition_next(current_line_end);
-      curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
-    } else {
-      // New row
-      with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
-        draw_editable_line(app, conf->ed, (editable_line_t){
-          .start = current_line_start,
-          .end = current_line_end,
-        }, part_template);
-      }
+    if (!word_empty) {
+      float next_word_width = calculate_word_width(
+        app,
+        conf->font_size,
+        conf->font,
+        conf->ed,
+        curr_rune,
+        next_word_end
+      );
 
-      lines_drawn++;
-      current_line_start = curr_rune;
-      current_line_end = next_word_end;
-      curr_rune = pieceposition_next(next_word_end);
-      remaining_row_width = constraints.x - next_word_width;
+      if (remaining_row_width >= next_word_width) { // Next word fits in this line
+        current_line_end = next_word_end;
+        remaining_row_width -= next_word_width;
+        curr_rune = pieceposition_next(current_line_end);
+        curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
+      } else {
+        // New row
+        with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
+          draw_editable_line(app, conf->ed, (editable_line_t){
+            .start = current_line_start,
+            .end = current_line_end,
+          }, part_template);
+        }
+
+        lines_drawn++;
+        current_line_start = curr_rune;
+        current_line_end = next_word_end;
+        curr_rune = pieceposition_next(next_word_end);
+        remaining_row_width = constraints.x - next_word_width;
+      }
     }
 
     if (new_line) {
-      // New row
-      with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
-        draw_editable_line(app, conf->ed, (editable_line_t){
-          .start = current_line_start,
-          .end = current_line_end,
-        }, part_template);
+
+      if (!word_empty) {
+        // New row
+        with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
+          draw_editable_line(app, conf->ed, (editable_line_t){
+            .start = current_line_start,
+            .end = current_line_end,
+          }, part_template);
+        }
+
+        // Move to the newline rune
+        curr_rune = pieceposition_next(next_word_end);
+        assert(pieceposition_rune(conf->ed, curr_rune) == '\n' << 24);
       }
 
       lines_drawn++;
 
-      // Move to the newline rune
-      curr_rune = pieceposition_next(next_word_end);
-      assert(pieceposition_rune(conf->ed, curr_rune) == '\n' << 24);
-
       // Move past the newline rune
       curr_rune = pieceposition_next(curr_rune);
+      printf("After moving past newline rune, the next rune is %c\n", pieceposition_rune(conf->ed, curr_rune) >> 24);
 
       current_line_start = curr_rune;
       current_line_end = curr_rune;
