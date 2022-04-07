@@ -12,6 +12,7 @@
 #include "../ops/ops.h"
 #include "../filedialog/filedialog.h"
 #include "../utils/logging.h"
+#include "../font/utf8/utf8.h"
 
 // Open a file selection dialog and import the selected markdown file.
 static void editor_open_file(editor_t *ed) {
@@ -59,6 +60,19 @@ typedef struct {
   Font *font;
 } editable_piece_part_t;
 
+void draw_caret(AppContext *app, float font_size) {
+  rect(
+    app,
+    (point_t){
+      .x = 1,
+      .y = font_size*1.5
+    },
+    &(rect_t){
+      .color = (color_t){0,0,0,255}
+    }
+  );
+}
+
 // Create a text widget from part of a piece or a complete piece.
 point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece_part_t *conf) {
   debug_log("Rendering part of piece %p from source %s, starting at %d and going until %d \n",
@@ -86,16 +100,7 @@ point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece
     assert(conf->cursor.offset < conf->piece_rune_positions.length);
     float cursor_x_offset = conf->piece_rune_positions.positions[conf->cursor.offset].minx - conf->piece_rune_positions.positions[conf->start].minx;
     with_offset(&app->oplist, (point_t){cursor_x_offset, -conf->font_size * 0.25}) {
-      rect(
-        app,
-        (point_t){
-          .x = 1,
-          .y = conf->font_size*1.5
-        },
-        &(rect_t){
-          .color = (color_t){0,0,0,255}
-        }
-      );
+      draw_caret(app, conf->font_size);
     }
   }
 
@@ -121,20 +126,6 @@ typedef struct {
   pieceposition_t start;
   pieceposition_t end;
 } editable_line_t;
-
-static inline bool rune_is_newline(rune_t rune) {
-  if (rune == '\n' << 24) {
-    return true;
-  }
-  return false;
-}
-
-static inline bool rune_is_whitespace(rune_t rune) {
-  if (rune == ' ' << 24) {
-    return true;
-  }
-  return false;
-}
 
 static pieceposition_t pieceposition_next(pieceposition_t curr) {
   if (curr.piece->length > curr.offset + 1) {
@@ -179,7 +170,7 @@ static inline bool piecepositions_equal(pieceposition_t a, pieceposition_t b) {
   return a.piece == b.piece && a.offset == b.offset;
 }
 
-// Returns the pieceposition_t at which the next word ends
+// Returns the pieceposition_t of the first whitespace after the next word
 // Also returns if rune after the next word is a newline
 // and if the word is empty (if there are multiple newlines, the words in between have no width), in this case the end is invalid.
 static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, bool *new_line, bool *word_empty) {
@@ -211,13 +202,12 @@ static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, b
   }
 
   if (pieceposition_rune(ed, curr) == '\n' << 24) { // Newline after word
-    printf("Newline encountered\n");
     *new_line = true;
   } else {
     *new_line = false;
   }
 
-  return pieceposition_last(curr); // Move curr back to the last non-whitespace rune
+  return curr;
 }
 
 static inline void calculate_piece_rune_positions(
@@ -452,7 +442,7 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
         current_line_end = next_word_end;
         remaining_row_width -= next_word_width;
         curr_rune = pieceposition_next(current_line_end);
-        curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
+        //curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
       } else {
         // New row
         with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
@@ -471,7 +461,6 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
     }
 
     if (new_line) {
-
       if (!word_empty) {
         // New row
         with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
@@ -480,17 +469,8 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
             .end = current_line_end,
           }, part_template);
         }
-
-        // Move to the newline rune
-        curr_rune = pieceposition_next(next_word_end);
-        assert(pieceposition_rune(conf->ed, curr_rune) == '\n' << 24);
       }
-
       lines_drawn++;
-
-      // Move past the newline rune
-      curr_rune = pieceposition_next(curr_rune);
-      printf("After moving past newline rune, the next rune is %c\n", pieceposition_rune(conf->ed, curr_rune) >> 24);
 
       current_line_start = curr_rune;
       current_line_end = curr_rune;

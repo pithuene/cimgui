@@ -78,3 +78,18 @@ void rune_encode(char **output, rune_t rune) {
     (*output)++;
   }
 }
+
+bool rune_is_newline(rune_t rune) {
+  if (rune == '\n' << 24) {
+    return true;
+  }
+  return false;
+}
+
+bool rune_is_whitespace(rune_t rune) {
+  if (rune == ' ' << 24) {
+    return true;
+  }
+  return false;
+}
+

@@ -75,7 +75,12 @@ void op_execute(op_execution_state_t *state, optype_t *untyped_op) {
       char encoded[encoding_length];
       char *encoding_ptr = (char*) encoded;
       for(int i = 0; i < rune_count; i++) {
-        rune_encode(&encoding_ptr, op->string[i]);
+        if (rune_is_newline(op->string[i])) {
+          // Do not try to render newlines, render spaces instead
+          rune_encode(&encoding_ptr, ' ' << 24);
+        } else {
+          rune_encode(&encoding_ptr, op->string[i]);
+        }
       }
       
       nvgText(state->vg,
