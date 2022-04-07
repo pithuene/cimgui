@@ -121,41 +121,6 @@ typedef struct {
   pieceposition_t end;
 } editable_line_t;
 
-// Starting from a given position in a piece, calculates the longest part of it that will still fit into a given width.
-// Returns the pieceposition of the last rune that will fit.
-// If the remainder of the piece fits entirely, it will return the position of the last rune in that piece.
-static void find_longest_fitting_piece_part(
-  pieceposition_t start, // First rune to be rendered
-  piece_rune_positions_t positions, // Rune positions of the piece
-  float space_left, // Maximum width to occupy
-  pieceposition_t *end, // Result into which the last rendered rune is written
-  bool *row_full, // Whether the piece had to be broken up because the row was full
-  float *space_occupied // How much width the part occupied
-) {
-  *end = start;
-  float curr_width = positions.positions[end->offset].maxx - positions.positions[end->offset].minx;
-  while (curr_width < space_left && end->piece->length > end->offset + 1) {
-    float next_rune_width = positions.positions[end->offset + 1].maxx - positions.positions[end->offset + 1].minx;
-    if (curr_width + next_rune_width < space_left) {
-      // Next rune fits
-      end->offset++;
-      curr_width += next_rune_width;
-    } else {
-      // Next rune does not fit
-      break;
-    }
-  }
-
-  // End now is the last rune that would fit into the line.
-  // Now backtrack:
-  //  Find the last whitespace in this piece, use it as the new end
-  //  If there is no whitespace in this piece
-  //    If this is the last piece, render 
-
-  *space_occupied = curr_width;
-  *row_full = end->piece->length - 1 != end->offset;
-}
-
 static inline bool rune_is_newline(rune_t rune) {
   if (rune == '\n' << 24) {
     return true;
@@ -425,32 +390,6 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
 }
 
 point_t editable_text(AppContext *app, point_t constraints, editable_text_t *conf) {
-  // Calculate rune positions for all pieces
-  // TODO: Can we get rid of this heap allocated vector?
-  vec_t(piece_rune_positions_t) piece_rune_positions = vec(piece_rune_positions_t, 8);
-  piecetable_piece_t *curr_piece = conf->first_piece;
-  while (curr_piece) {
-    rune_position_t *positions_arr = arenaalloc(&app->ops_arena, sizeof(rune_position_t) * curr_piece->length);
-    assert(positions_arr != NULL);
-    piece_rune_positions_t positions = {
-      .length = curr_piece->length,
-      .positions = positions_arr,
-    };
-
-    const rune_t *source = curr_piece->from_original ? conf->ed->original : conf->ed->added;
-    positions.length = rune_text_positions(
-      app->vg,
-      conf->font_size,
-      conf->font,
-      source + curr_piece->start,
-      source + curr_piece->start + curr_piece->length,
-      positions.positions,
-      curr_piece->length
-    );
-    vecpush(piece_rune_positions, positions);
-    curr_piece = curr_piece->next;
-  }
-
   editable_piece_part_t part_template = {
     .font = conf->font,
     .font_size = conf->font_size,
@@ -468,7 +407,6 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
   pieceposition_t current_line_end = current_line_start;
 
   pieceposition_t curr_rune = current_line_start; // The next rune to be handled
-  int piece_index = 0; // Index of the current piece in the piece_rune_positions array
 
   // Number of lines above the current one. Used for offset calculation.
   int lines_drawn = 0;
@@ -505,9 +443,6 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       remaining_row_width -= next_word_width;
       curr_rune = pieceposition_next(current_line_end);
       curr_rune = pieceposition_next(curr_rune); // Skip the whitespace character after this word
-      if (curr_rune.piece != current_line_end.piece) { // Moved to next piece
-        piece_index++;
-      }
     } else {
       // New row
       with_offset(&app->oplist, (point_t){0, lines_drawn * (conf->font_size + conf->line_spacing)}) {
@@ -521,9 +456,6 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       current_line_start = curr_rune;
       current_line_end = next_word_end;
       curr_rune = pieceposition_next(next_word_end);
-      if (curr_rune.piece != next_word_end.piece) { // Moved to next piece
-        piece_index++;
-      }
       remaining_row_width = constraints.x - next_word_width;
     }
 
@@ -541,24 +473,15 @@ point_t editable_text(AppContext *app, point_t constraints, editable_text_t *con
       // Move to the newline rune
       curr_rune = pieceposition_next(next_word_end);
       assert(pieceposition_rune(conf->ed, curr_rune) == '\n' << 24);
-      if (curr_rune.piece != next_word_end.piece) { // Moved to next piece
-        piece_index++;
-      }
 
       // Move past the newline rune
-      piecetable_piece_t *old_piece = curr_rune.piece;
       curr_rune = pieceposition_next(curr_rune);
-      if (curr_rune.piece != old_piece) { // Moved to next piece
-        piece_index++;
-      }
 
       current_line_start = curr_rune;
       current_line_end = curr_rune;
       remaining_row_width = constraints.x;
     }
   }
-
-  vecfree(piece_rune_positions);
 
   return (point_t){
     .x = constraints.x,
