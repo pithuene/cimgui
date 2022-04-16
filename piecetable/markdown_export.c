@@ -1,4 +1,5 @@
-#include "piecetable.h"
+#include "types.h"
+#include <stdio.h>
 
 typedef void (*block_print_t)(editor_t *, block_t *, FILE *);
 

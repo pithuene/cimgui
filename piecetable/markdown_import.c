@@ -1,7 +1,12 @@
 #include <stdio.h>
-#include "piecetable.h"
 #include "md4c/src/md4c.h"
-#include "../font/utf8/utf8.h"
+
+#include "types.h"
+#include "editor_ops.h"
+#include "block_ops.h"
+
+// TODO: Import only needed for editor_create_new_blockterminator
+#include "piece_ops.h"
 
 typedef struct {
   editor_t *ed;
