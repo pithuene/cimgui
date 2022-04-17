@@ -1,5 +1,10 @@
 #include <stdio.h>
 #include "md4c/src/md4c.h"
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <stdbool.h>
 
 #include "types.h"
 #include "editor_ops.h"
@@ -117,3 +122,43 @@ void editor_import_markdown(editor_t *ed, const char *markdown) {
   ed->cursor = original_cursor;
 }
 
+int editor_import_markdown_filepath(editor_t *ed, const char *file_path) {
+  int fd = open(file_path, O_RDONLY);
+  if (fd < 0) {
+    return 1; // Could not open file
+  }
+
+  struct stat stats;
+  if (fstat(fd, &stats) < 0) {
+    return 1; // Could not get file size
+  }
+
+  const char *file_content = mmap(NULL, stats.st_size, PROT_READ, MAP_SHARED, fd, 0);
+  if (file_content == MAP_FAILED) {
+    return 1; // Could not map file into memory
+  }
+
+  editor_clear(ed); // Clear the previous editor content
+  editor_import_markdown(ed, file_content); // Import file
+
+  if (munmap((void *) file_content, stats.st_size) < 0) {
+    // Could not unmap the file.
+    // Since this is especially bad and leaves the file open, but unusable,
+    // stop execution in debug mode.
+    assert(false && "Failed to unmap memory during markdown filepath import");
+    return 1;
+  }
+
+  // editor_clear leaves one empty paragraph, so the editor never reaches an unusable state.
+  // This removes the initial paragraph after the file content has been inserted.
+  editor_delete_block(ed, ed->first);
+
+  // Move cursor back to file start
+  ed->cursor = (editor_cursor_t){
+    .block = ed->first,
+    .piece = ed->first->first_piece,
+    .offset = 0,
+  };
+
+  return 0;
+}

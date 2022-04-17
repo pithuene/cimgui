@@ -25,8 +25,11 @@ editor_t editor_create(char *initial_content_string);
 // Remove all content from an editor
 void editor_clear(editor_t *ed);
 
-// Markdown handling
+/* Markdown handling */
+
 void editor_import_markdown(editor_t *ed, const char *markdown);
+// Returns 0 on success, non-zero on error
+int editor_import_markdown_filepath(editor_t *ed, const char *file_path);
 void editor_export_markdown(editor_t *ed, FILE *output);
 
 #endif

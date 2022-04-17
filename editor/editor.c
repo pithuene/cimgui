@@ -1,10 +1,6 @@
-#include <stdio.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <pthread.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 #include <stdlib.h>
 #include "editor.h"
 #include "../widgets/widgets.h"
@@ -19,22 +15,8 @@ static void editor_open_file(editor_t *ed) {
   nfdchar_t *path = NULL;
   nfdresult_t dialog_result = NFD_OpenDialog(NULL, NULL, &path);
   if (dialog_result == NFD_OKAY) {
-    editor_clear(ed);
-
-    int fd = open(path, O_RDONLY);
-    struct stat stats;
-    fstat(fd, &stats);
-    const char *file_content = mmap(NULL, stats.st_size, PROT_READ, MAP_SHARED, fd, 0);
-    editor_import_markdown(ed, file_content);
-    munmap((void *) file_content, stats.st_size);
+    editor_import_markdown_filepath(ed, path);
     free(path);
-
-    editor_delete_block(ed, ed->first);
-    ed->cursor = (editor_cursor_t){
-      .block = ed->first,
-      .piece = ed->first->first_piece,
-      .offset = 0,
-    };
   }
 }
 
