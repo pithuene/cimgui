@@ -17,7 +17,7 @@ clean:
 	make -C widgets clean
 	make -C element clean
 	make -C checktag clean
-	make -C piecetable clean
+	make -C editor_core clean
 	make -C editor clean
 	make -C ops clean
 	make -C filedialog clean
@@ -52,17 +52,17 @@ filedialog/filedialog.a: force_look
 checktag/checktag.a: force_look
 	$(MAKE) -C checktag PARENT_CFLAGS="$(CFLAGS)"
 
-piecetable/piecetable.a: force_look
-	$(MAKE) -C piecetable PARENT_CFLAGS="$(CFLAGS)"
+editor_core/editor_core.a: force_look
+	$(MAKE) -C editor_core PARENT_CFLAGS="$(CFLAGS)"
 
 editor/editor.a: force_look
 	$(MAKE) -C editor PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a piecetable/piecetable.a render.so
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3 gtk+-3.0) -o main main.c application.c editor/editor.a piecetable/piecetable.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 gtk+-3.0) -ldl -rdynamic
+main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a render.so
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3 gtk+-3.0) -o main main.c application.c editor/editor.a editor_core/editor_core.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 gtk+-3.0) -ldl -rdynamic
 
-render.so: render.c events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a piecetable/piecetable.a
-	cc $(CFLAGS) -shared -fPIC -o render.so render.c editor/editor.a piecetable/piecetable.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a
+render.so: render.c events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a
+	cc $(CFLAGS) -shared -fPIC -o render.so render.c editor/editor.a editor_core/editor_core.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a
 
 force_look:
 	true

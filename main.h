@@ -4,7 +4,7 @@
 #include "font/font.h"
 #include "widgets/widgets.h"
 #include "application.h"
-#include "piecetable/piecetable.h"
+#include "editor_core/editor_core.h"
 
 typedef struct {
   Font fontNormal;

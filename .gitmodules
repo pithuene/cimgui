@@ -4,8 +4,8 @@
 [submodule "ds"]
 	path = ds
 	url = git@github.com:pithuene/ds.git
-[submodule "piecetable/md4c"]
-	path = piecetable/md4c
+[submodule "editor_core/md4c"]
+	path = editor_core/md4c
 	url = https://github.com/mity/md4c.git
 [submodule "filedialog/nativefiledialog"]
 	path = filedialog/nativefiledialog

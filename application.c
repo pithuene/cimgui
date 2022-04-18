@@ -18,7 +18,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "widgets/widgets.h"
-#include "piecetable/piecetable.h"
+#include "editor_core/editor_core.h"
 
 void application_draw(AppContext *context);
 

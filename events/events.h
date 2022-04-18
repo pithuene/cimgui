@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include "../utils/utils.h"
 #include "../ds/mem/arenaalloc.h"
-#include "../piecetable/piecetable.h"
+#include "../editor_core/editor_core.h"
 
 // TODO: Rename InputEvent to just Event as this system is now used for non-input events
 // TODO: Change MyType naming to my_type_t

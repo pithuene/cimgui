@@ -1,5 +1,5 @@
-#ifndef _PIECETABLE_H
-#define _PIECETABLE_H
+#ifndef _EDITOR_CORE_H
+#define _EDITOR_CORE_H
 
 // TODO: Clean up the exposed API
 #include "types.h"

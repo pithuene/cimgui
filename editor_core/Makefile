@@ -1,6 +1,6 @@
 SRCS := $(wildcard ./*.c)
 OBJS := $(patsubst ./%.c,./%.o,$(SRCS))
-RES  := piecetable.a
+RES  := editor_core.a
 
 .PHONY: all
 all: $(RES)
