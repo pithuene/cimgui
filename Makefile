@@ -1,5 +1,7 @@
-CFLAGS_DEBUG = -g -fprofile-arcs -ftest-coverage
+CFLAGS_DEBUG = -g -fprofile-arcs -ftest-coverage -fPIC
 CFLAGS = -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Wno-unused-function  -Werror $(CFLAGS_DEBUG)
+SUB_ARCHIVES = events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a
+
 
 .PHONY: all
 all: main
@@ -27,6 +29,7 @@ clean:
 	rm -f nanovg.o
 	rm -f main
 	rm -f render.so
+	rm -f cimgui.a
 
 nanovg.o: nanovg/src/nanovg.c
 	cc -c -std=c99 nanovg/src/nanovg.c
@@ -61,14 +64,17 @@ editor_core/editor_core.a: force_look
 editor/editor.a: force_look
 	$(MAKE) -C editor PARENT_CFLAGS="$(CFLAGS)"
 
-main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a render.so
-	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3 gtk+-3.0) -o main main.c application.c editor/editor.a editor_core/editor_core.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a ./ds/libds.a nanovg.o -lm $(shell pkg-config --libs fontconfig gl glew glfw3 gtk+-3.0) -ldl -rdynamic
+cimgui.a: nanovg.o ds/libds.a $(SUB_ARCHIVES)
+	ar crT cimgui.a nanovg.o ds/libds.a $(SUB_ARCHIVES)
 
-render.so: render.c events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a
-	cc $(CFLAGS) -shared -fPIC -o render.so render.c editor/editor.a editor_core/editor_core.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a
+main: main.c application.c render.so cimgui.a
+	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3 gtk+-3.0) -o main main.c application.c cimgui.a -lm $(shell pkg-config --libs fontconfig gl glew glfw3 gtk+-3.0) -ldl -rdynamic
+
+render.so: render.c cimgui.a
+	cc $(CFLAGS) -shared -fPIC -o render.so render.c cimgui.a
 
 .PHONY: test
-test: clean-coverage
+test: cimgui.a clean-coverage
 	$(MAKE) -C test run_test;
 
 # Remove all previous coverage data
@@ -78,7 +84,7 @@ clean-coverage:
 	rm -f ./coverage/*
 
 .PHONY: coverage
-coverage: main test
+coverage: test
 	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e nanovg/src/nanovg_gl.h;
 	xdg-open ./coverage/coverage.html
 
