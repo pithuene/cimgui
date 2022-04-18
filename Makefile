@@ -1,4 +1,5 @@
-CFLAGS = -g -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Wno-unused-function  -Werror 
+CFLAGS_DEBUG = -g -fprofile-arcs -ftest-coverage
+CFLAGS = -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Wno-unused-function  -Werror $(CFLAGS_DEBUG)
 
 .PHONY: all
 all: main
@@ -21,6 +22,8 @@ clean:
 	make -C editor clean
 	make -C ops clean
 	make -C filedialog clean
+	find . -name '*.gcda' -delete
+	find . -name '*.gcno' -delete
 	rm -f nanovg.o
 	rm -f main
 	rm -f render.so
@@ -63,6 +66,21 @@ main: main.c application.c nanovg.o ds/libds.a events/events.a font/font.a eleme
 
 render.so: render.c events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a
 	cc $(CFLAGS) -shared -fPIC -o render.so render.c editor/editor.a editor_core/editor_core.a events/events.a element/element.a filedialog/filedialog.a ops/ops.a font/font.a widgets/widgets.a checktag/checktag.a
+
+.PHONY: test
+test: clean-coverage
+	$(MAKE) -C test run_test;
+
+# Remove all previous coverage data
+.PHONY: clean-coverage
+clean-coverage:
+	find . -name '*.gcda' -delete;
+	rm -f ./coverage/*
+
+.PHONY: coverage
+coverage: main test
+	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e nanovg/src/nanovg_gl.h;
+	xdg-open ./coverage/coverage.html
 
 force_look:
 	true

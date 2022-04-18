@@ -10,3 +10,6 @@
 [submodule "filedialog/nativefiledialog"]
 	path = filedialog/nativefiledialog
 	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "test/munit"]
+	path = test/munit
+	url = https://github.com/nemequ/munit.git
