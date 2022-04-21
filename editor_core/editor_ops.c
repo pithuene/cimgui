@@ -177,6 +177,11 @@ void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor) {
   }
 }
 
+rune_t editor_cursor_rune(editor_t *ed, editor_cursor_t cursor) {
+  const rune_t *source = cursor.piece->from_original ? ed->original : ed->added;
+  return source[cursor.offset];
+}
+
 int editor_block_count(editor_t *ed) {
   int block_count = 0;
   block_t *curr = ed->first;

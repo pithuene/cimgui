@@ -99,6 +99,7 @@ typedef struct {
   float line_spacing;
 } editable_text_t;
 
+// TODO: Might be simpler to just reuse the editor_cursor_t for this
 typedef struct {
   piecetable_piece_t *piece;
   uint32_t            offset; // TODO: Rename this so the difference to a piecetable_piece_t offset is clear

@@ -2,7 +2,6 @@ CFLAGS_DEBUG = -g -fprofile-arcs -ftest-coverage -fPIC
 CFLAGS = -std=c99 -pedantic -Wall -Wno-override-init-side-effects -Wno-unused-function  -Werror $(CFLAGS_DEBUG)
 SUB_ARCHIVES = events/events.a font/font.a element/element.a filedialog/filedialog.a ops/ops.a widgets/widgets.a checktag/checktag.a editor/editor.a editor_core/editor_core.a
 
-
 .PHONY: all
 all: main
 
@@ -64,8 +63,11 @@ editor_core/editor_core.a: force_look
 editor/editor.a: force_look
 	$(MAKE) -C editor PARENT_CFLAGS="$(CFLAGS)"
 
-cimgui.a: nanovg.o ds/libds.a $(SUB_ARCHIVES)
-	ar crT cimgui.a nanovg.o ds/libds.a $(SUB_ARCHIVES)
+nanovg.a: nanovg.o
+	ar cr nanovg.a nanovg.o
+
+cimgui.a: nanovg.a ds/libds.a $(SUB_ARCHIVES)
+	./merge_archives cimgui.a nanovg.a ds/libds.a $(SUB_ARCHIVES)
 
 main: main.c application.c render.so cimgui.a
 	cc $(CFLAGS) $(shell pkg-config --cflags fontconfig gl glew glfw3 gtk+-3.0) -o main main.c application.c cimgui.a -lm $(shell pkg-config --libs fontconfig gl glew glfw3 gtk+-3.0) -ldl -rdynamic
@@ -85,7 +87,7 @@ clean-coverage:
 
 .PHONY: coverage
 coverage: test
-	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e nanovg/src/nanovg_gl.h;
+	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e font/utf8/test_utf8.c -e nanovg/src/nanovg_gl.h;
 	xdg-open ./coverage/coverage.html
 
 force_look:

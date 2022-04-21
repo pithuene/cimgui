@@ -8,8 +8,11 @@ all: $(RES)
 %.o: %.c
 	$(CC) $(PARENT_CFLAGS) -c $< -o $@
 
-$(RES): $(OBJS) utf8/utf8.a
-	ar crT $(RES) $(OBJS) utf8/utf8.a
+objs_$(RES): $(OBJS)
+	ar cr objs_$(RES) $(OBJS)
+
+$(RES): objs_$(RES) utf8/utf8.a
+	../merge_archives $(RES) objs_$(RES) utf8/utf8.a
 
 .PHONY: clean
 clean:

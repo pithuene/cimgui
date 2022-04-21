@@ -1,0 +1,15 @@
+#!/bin/sh
+
+SCRIPT="create $1"
+shift 1
+
+for SRCLIB in "$@"; do
+  SCRIPT="$SCRIPT\naddlib $SRCLIB"
+done
+
+SCRIPT="$SCRIPT\nsave"
+SCRIPT="$SCRIPT\nend"
+
+echo "$SCRIPT" | ar -M
+
+

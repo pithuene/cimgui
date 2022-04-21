@@ -17,6 +17,9 @@ void editor_delete_backwards(editor_t *ed, editor_cursor_t *cursor);
 void editor_move_cursor_forward(editor_t *ed, editor_cursor_t *cursor);
 void editor_move_cursor_backward(editor_t *ed, editor_cursor_t *cursor);
 
+// Return the rune under the cursor
+rune_t editor_cursor_rune(editor_t *ed, editor_cursor_t cursor);
+
 // How many blocks are there in the document
 int editor_block_count(editor_t *ed);
 
