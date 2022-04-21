@@ -87,7 +87,8 @@ clean-coverage:
 
 .PHONY: coverage
 coverage: test
-	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e font/utf8/test_utf8.c -e nanovg/src/nanovg_gl.h;
+	gcovr -s --html-details ./coverage/coverage.html --exclude-directories test -e main.c -e render.c -e font/utf8/test_utf8.c -e nanovg/src/nanovg_gl.h \
+		$(shell fd -E nativefiledialog -E ds -E md4c --print0 --glob 'test_*.c' | xargs --null printf " -e %s");
 	xdg-open ./coverage/coverage.html
 
 force_look:
