@@ -330,6 +330,10 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
     part.length = curr_position.piece->length - curr_position.offset;
 
     point_t part_offset = {x_offset, 0};
+    /* TODO: Fix kerning at piece borders.
+     * When the piece part is not the first in a given line, calculate the width of both characters at the border alone, and their width together.
+     * Subtract the difference from the x offset of the new piece.
+     * acd|def => calculate width of "d", "e" and "de" => width "d" + width "e" - width "de" */
     with_offset(&app->oplist, part_offset){
       x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
     };
@@ -662,39 +666,62 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
 
   int block_count = editor_block_count(ed);
 
-  element_t block_elements[block_count];
+  block_draw_data_t block_draw_datas[block_count];
+  widget_t block_widgets[block_count];
+
+  // The index of the block the cursor is currently in
+  int cursor_block_index = 0;
 
   block_t *curr_block = ed->first;
   int block_index = 0;
   while (curr_block) {
-    block_draw_data_t *draw_data = arenaalloc(&app->ops_arena, sizeof(block_draw_data_t));
-    *draw_data = (block_draw_data_t){
+    // Find cursor_block_index
+    if (curr_block == ed->cursor.block) {
+      cursor_block_index = block_index;
+    }
+
+    block_draw_datas[block_index] = (block_draw_data_t){
       .ed = ed,
       .block = curr_block,
     };
-    widget_t block_widget = (widget_t){
+    block_widgets[block_index] = (widget_t){
       .draw = draw_function_for_type(curr_block->type),
-      .data = draw_data
-    };
-    block_elements[block_index] = (element_t){
-      .width = {100, unit_percent},
-      .widget = block_widget,
+      .data = &block_draw_datas[block_index],
     };
     curr_block = curr_block->next;
     block_index++;
   }
 
-  
-  column(app, constraints, &(column_t){
+  static scrollable_column_t column = {
+    .child_count = 0,
+    .children = NULL,
     .spacing = 20,
-    .overflow_handling = overflow_handling_scroll,
-    .scroll_offset = scroll_offset,
-    .children = (element_children_t){
-      .count = block_count,
-      .elements = block_elements,
-    },
-  });
+    .first_shown_index = 5,
+    .last_shown_index = 99999999, // Set to large value so the first draw doesn't think the cursor isn't visible
+    .scroll_offset = 0,
+  };
 
+  column.children = block_widgets;
+  column.child_count = block_count;
+
+  // TODO: What if a block is taller than the view?
+  // Is cursor in view?
+  if (cursor_block_index < column.first_shown_index) {
+    // Cursor above current view
+    column.first_shown_index = cursor_block_index;
+    column.scroll_offset = 0;
+  }
+
+  scrollable_column(app, constraints, &column);
+
+  if (cursor_block_index > column.last_shown_index) {
+    // Cursor is at the end of or below the current view
+
+    // TODO: Since I don't know the height of the block, this doesn't make sure that the block is visible entirely, only that part of it is.
+    if (column.first_shown_index < column.child_count - 1) {
+      column.first_shown_index++;
+    }
+  }
 
   return constraints;
 }
