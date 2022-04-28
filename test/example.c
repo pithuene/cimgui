@@ -11,7 +11,7 @@ int main (int argc, const char* argv[]) {
   };
 
   const MunitSuite top_level_suite = {
-    "/cimgui", /* name */
+    "", /* name */
     (MunitTest[]){
       { NULL, NULL, NULL, NULL, MUNIT_TEST_OPTION_NONE, NULL }
     }, /* tests */

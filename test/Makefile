@@ -14,6 +14,7 @@ munit/munit.o: munit/munit.c
 test: example.o $(TEST_SRCS) ../cimgui.a
 	$(CC) --coverage -o test example.o $(TEST_SRCS) ../cimgui.a munit/munit.o
 
+.PHONY: run_test
 run_test: test
 	./test
 
