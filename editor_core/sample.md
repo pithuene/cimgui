@@ -13,3 +13,10 @@ What follows is a list:
 - Level 0
   - Level 1
 - Level 0
+
+1. Ordered
+2. List
+   1. Nested Ordered
+   2. Nested Ordered 2
+3. And back
+

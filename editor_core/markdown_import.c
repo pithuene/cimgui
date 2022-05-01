@@ -13,10 +13,14 @@
 // TODO: Import only needed for editor_create_new_blockterminator
 #include "piece_ops.h"
 
+#define MAX_LIST_INDENT 9
+
 typedef struct {
   editor_t *ed;
   MD_BLOCKTYPE current_listtype;
   int8_t current_list_indentation_level;
+  // The current list number for each indentation level
+  int8_t current_list_number[MAX_LIST_INDENT];
 } parser_run_t;
 
 int parser_text(MD_TEXTTYPE type, MD_CHAR *text, MD_SIZE size, parser_run_t *run) {
@@ -44,11 +48,23 @@ int parser_enter_block(MD_BLOCKTYPE type, void* detail, parser_run_t *run) {
   } else if (type == MD_BLOCK_UL) {
     run->current_listtype = MD_BLOCK_UL;
     run->current_list_indentation_level++;
+    run->current_list_number[run->current_list_indentation_level] = 1;
     return 0;
   } else if (type == MD_BLOCK_OL) {
     run->current_listtype = MD_BLOCK_OL;
     run->current_list_indentation_level++;
-    return 0;
+    run->current_list_number[run->current_list_indentation_level] = 1;
+    // TODO: Add ordered list block
+    if (run->current_list_indentation_level < 1) {
+      new_block = (block_t *) editor_create_block_paragraph(
+        run->ed,
+        NULL,
+        NULL
+      );
+    } else {
+      editor_insert_before(run->ed, &run->ed->cursor, '\n' << 24);
+      return 0;
+    }
   } else if (type == MD_BLOCK_LI && run->current_listtype == MD_BLOCK_UL) {
     new_block = (block_t *) editor_create_block_bullet(
       run->ed,
@@ -56,12 +72,32 @@ int parser_enter_block(MD_BLOCKTYPE type, void* detail, parser_run_t *run) {
       NULL,
       NULL
     );
-  } else {
+    run->current_list_number[run->current_list_indentation_level]++;
+  } else if (type == MD_BLOCK_LI && run->current_listtype == MD_BLOCK_OL) {
+    // TODO: Remove once ordered list block is implemented
+    if (run->current_list_number[run->current_list_indentation_level] > 1)
+      editor_insert_before(run->ed, &run->ed->cursor, '\n' << 24);
+    for (int i = 0; i < run->current_list_indentation_level; i++) {
+      editor_insert_before(run->ed, &run->ed->cursor, ' ' << 24);
+      editor_insert_before(run->ed, &run->ed->cursor, ' ' << 24);
+      editor_insert_before(run->ed, &run->ed->cursor, ' ' << 24);
+      editor_insert_before(run->ed, &run->ed->cursor, ' ' << 24);
+    }
+    editor_insert_before(run->ed, &run->ed->cursor, ('0' + run->current_list_number[run->current_list_indentation_level]) << 24);
+    editor_insert_before(run->ed, &run->ed->cursor, '.' << 24);
+    editor_insert_before(run->ed, &run->ed->cursor, ' ' << 24);
+    run->current_list_number[run->current_list_indentation_level]++;
+    return 0;
+  } else if (type == MD_BLOCK_P) {
     new_block = (block_t *) editor_create_block_paragraph(
       run->ed,
       NULL,
       NULL
     );
+  } else {
+    fprintf(stderr, "Unknown block type %d entered during markdown import\n", type);
+    assert(false && "Unknown block type entered");
+    exit(1);
   }
   
   piecetable_piece_t *bt = editor_create_new_blockterminator(run->ed);
