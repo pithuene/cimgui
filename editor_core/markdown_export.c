@@ -37,7 +37,7 @@ static void print_heading(editor_t *ed, block_heading_t *block, FILE *output) {
 
 static void print_bullet(editor_t *ed, block_bullet_t *block, FILE *output) {
   for (uint8_t i = 0; i < block->indentation_level; i++) {
-    fprintf(output, "\t");
+    fprintf(output, "    ");
   }
   fprintf(output, "- ");
   print_pieces(ed, block->block.first_piece, block->block.last_piece, output);
@@ -50,8 +50,8 @@ static block_print_t print_function_for_type(blocktype_t type) {
   switch (type) {
     case blocktype_heading: return (block_print_t) print_heading;
     case blocktype_bullet: return (block_print_t) print_bullet;
-    case blocktype_paragraph: // Fallthrough
-    default: return (block_print_t) print_paragraph;
+    case blocktype_paragraph: return (block_print_t) print_paragraph;
+    default: return (block_print_t) NULL;
   }
 }
 
@@ -59,8 +59,10 @@ void editor_export_markdown(editor_t *ed, FILE *output) {
   block_t *curr_block = ed->first;
   while (curr_block) {
     block_print_t print_function = print_function_for_type(curr_block->type);
-    (*print_function)(ed, curr_block, output);
-    curr_block = curr_block->next;
-    fprintf(output, "\n");
+    if (print_function != NULL) {
+      (*print_function)(ed, curr_block, output);
+      curr_block = curr_block->next;
+      fprintf(output, "\n");
+    }
   }
 }
