@@ -80,6 +80,6 @@ point_t scrollable_column(AppContext *app, point_t constraints, scrollable_colum
     .elements = (element_t[]) { \
       __VA_ARGS__ \
     } \
-  } \
+  }
 
 #endif

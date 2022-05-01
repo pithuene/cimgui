@@ -232,10 +232,11 @@ point_t rune_text_bounds(NVGcontext *vg, float size, Font *font, const rune_t *s
   }
 
   float bounds[4];
-	nvgTextBounds(vg, 0, 0, encoded, encoded + encoding_length, bounds);
+	const float width = nvgTextBounds(vg, 0, 0, encoded, encoded + encoding_length, bounds);
 
   return (point_t){
-    .x = bounds[2] - bounds[0],
+    //.x = bounds[2] - bounds[0],
+    .x = width, // Use the text advance as width, not the bounds
     .y = size,
   };
 }
