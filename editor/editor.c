@@ -34,7 +34,6 @@ typedef struct {
   editor_t *ed;
   editor_cursor_t cursor;
   piecetable_piece_t *piece;
-  piece_rune_positions_t piece_rune_positions;
   uint32_t start;
   uint32_t length;
   color_t color;
@@ -53,6 +52,31 @@ void draw_caret(AppContext *app, float font_size) {
       .color = (color_t){0,0,0,255}
     }
   );
+}
+
+static inline void calculate_piece_rune_positions(
+  AppContext *app,
+  float font_size,
+  Font *font,
+  editor_t *ed,
+  piecetable_piece_t *piece,
+  rune_position_t *positions_buf,
+  piece_rune_positions_t *positions
+) {
+  const rune_t *source = piece->from_original ? ed->original : ed->added;
+  int length = rune_text_positions(
+    app->vg,
+    font_size,
+    font,
+    source + piece->start,
+    source + piece->start + piece->length,
+    positions_buf,
+    piece->length
+  );
+  *positions = (piece_rune_positions_t){
+    .positions = positions_buf,
+    .length = length,
+  };
 }
 
 // Create a text widget from part of a piece or a complete piece.
@@ -78,9 +102,26 @@ point_t editable_piece_part(AppContext *app, point_t constraints, editable_piece
     && conf->cursor.offset < conf->start + conf->length)
   {
     // Cursor is in this piece part
-    assert(conf->length <= conf->piece_rune_positions.length);
-    assert(conf->cursor.offset < conf->piece_rune_positions.length);
-    float cursor_x_offset = conf->piece_rune_positions.positions[conf->cursor.offset].minx - conf->piece_rune_positions.positions[conf->start].minx;
+
+    rune_position_t positions_buf[conf->piece->length];
+    piece_rune_positions_t positions = {
+      .length = conf->piece->length,
+      .positions = positions_buf,
+    };
+    calculate_piece_rune_positions(
+      app,
+      conf->font_size,
+      conf->font,
+      conf->ed,
+      conf->piece,
+      positions_buf,
+      &positions
+    );
+    assert(positions.length == conf->piece->length);
+
+    assert(conf->length <= positions.length);
+    assert(conf->cursor.offset < positions.length);
+    float cursor_x_offset = positions.positions[conf->cursor.offset].minx - positions.positions[conf->start].minx;
     with_offset(&app->oplist, (point_t){cursor_x_offset, -conf->font_size * 0.25}) {
       draw_caret(app, conf->font_size);
     }
@@ -193,30 +234,6 @@ static pieceposition_t find_next_word_end(editor_t *ed, pieceposition_t start, b
   return curr;
 }
 
-static inline void calculate_piece_rune_positions(
-  AppContext *app,
-  float font_size,
-  Font *font,
-  editor_t *ed,
-  piecetable_piece_t *piece,
-  rune_position_t *positions_buf,
-  piece_rune_positions_t *positions
-) {
-  const rune_t *source = piece->from_original ? ed->original : ed->added;
-  int length = rune_text_positions(
-    app->vg,
-    font_size,
-    font,
-    source + piece->start,
-    source + piece->start + piece->length,
-    positions_buf,
-    piece->length
-  );
-  *positions = (piece_rune_positions_t){
-    .positions = positions_buf,
-    .length = length,
-  };
-}
 
 static float calculate_word_width(
   AppContext *app,
@@ -230,54 +247,38 @@ static float calculate_word_width(
   
   // Word in a single piece
   if (start.piece == end.piece) {
-    piece_rune_positions_t positions = {0};
-    rune_position_t positions_buf[start.piece->length];
-    calculate_piece_rune_positions(
-      app,
+    const rune_t *source = start.piece->from_original ? ed->original : ed->added;
+    point_t bounds = rune_text_bounds(
+      app->vg,
       font_size,
       font,
-      ed,
-      start.piece,
-      positions_buf,
-      &positions
-    );
-    assert(positions.length > end.offset);
-    width += positions.positions[end.offset].maxx - positions.positions[start.offset].minx;
-    return width;
+      source + start.piece->start + start.offset,
+      source + start.piece->start + end.offset);
+    return bounds.x;
   }
 
   /* End of start piece */ {
-    piece_rune_positions_t positions = {0};
-    rune_position_t positions_buf[start.piece->length];
-    calculate_piece_rune_positions(
-      app,
+    const rune_t *source = start.piece->from_original ? ed->original : ed->added;
+    point_t bounds = rune_text_bounds(
+      app->vg,
       font_size,
       font,
-      ed,
-      start.piece,
-      positions_buf,
-      &positions
-    );
-    assert(positions.length > start.piece->length - 1);
-    width += positions.positions[start.piece->length - 1].maxx - positions.positions[start.offset].minx;
+      source + start.piece->start + start.offset,
+      source + start.piece->start + start.piece->length);
+    width += bounds.x;
   }
 
   // Handle all middle pieces
   piecetable_piece_t *curr_piece = start.piece->next;
   while (curr_piece && curr_piece != end.piece) {
-    piece_rune_positions_t positions = {0};
-    rune_position_t positions_buf[curr_piece->length];
-    calculate_piece_rune_positions(
-      app,
+    const rune_t *source = start.piece->from_original ? ed->original : ed->added;
+    point_t bounds = rune_text_bounds(
+      app->vg,
       font_size,
       font,
-      ed,
-      curr_piece,
-      positions_buf,
-      &positions
-    );
-    assert(positions.length > curr_piece->length - 1);
-    width += positions.positions[curr_piece->length - 1].maxx;
+      source + curr_piece->start,
+      source + curr_piece->start + curr_piece->length);
+    width += bounds.x;
 
     curr_piece = curr_piece->next;
   }
@@ -288,19 +289,14 @@ static float calculate_word_width(
   assert(curr_piece != NULL);
 
   /* Handle start of end piece */ {
-    piece_rune_positions_t positions = {0};
-    rune_position_t positions_buf[end.piece->length];
-    calculate_piece_rune_positions(
-      app,
+    const rune_t *source = start.piece->from_original ? ed->original : ed->added;
+    point_t bounds = rune_text_bounds(
+      app->vg,
       font_size,
       font,
-      ed,
-      end.piece,
-      positions_buf,
-      &positions
-    );
-    assert(positions.length > end.piece->length - 1);
-    width += positions.positions[end.offset].maxx;
+      source + end.piece->start,
+      source + end.piece->start + end.offset);
+    width += bounds.x;
   }
 
   return width;
@@ -313,27 +309,10 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
   while (curr_position.piece && curr_position.piece != line.end.piece) {
     editable_piece_part_t part = part_template;
     part.piece = curr_position.piece;
-
-    rune_position_t positions_buf[part.piece->length];
-    calculate_piece_rune_positions(
-      app,
-      part_template.font_size,
-      part_template.font,
-      ed,
-      part.piece,
-      positions_buf,
-      &part.piece_rune_positions
-    );
-    assert(part.piece_rune_positions.length == part.piece->length);
-
     part.start = curr_position.offset;
     part.length = curr_position.piece->length - curr_position.offset;
 
     point_t part_offset = {x_offset, 0};
-    /* TODO: Fix kerning at piece borders.
-     * When the piece part is not the first in a given line, calculate the width of both characters at the border alone, and their width together.
-     * Subtract the difference from the x offset of the new piece.
-     * acd|def => calculate width of "d", "e" and "de" => width "d" + width "e" - width "de" */
     with_offset(&app->oplist, part_offset){
       x_offset += editable_piece_part(app, (point_t){0,0}, &part).x;
     };
@@ -350,20 +329,6 @@ static void draw_editable_line(AppContext *app, editor_t *ed, editable_line_t li
   // Rendering the last piece of the line
   editable_piece_part_t part = part_template;
   part.piece = curr_position.piece;
-
-  rune_position_t positions_buf[part.piece->length];
-  calculate_piece_rune_positions(
-    app,
-    part_template.font_size,
-    part_template.font,
-    ed,
-    part.piece,
-    positions_buf,
-    &part.piece_rune_positions
-  );
-
-  assert(part.piece_rune_positions.length == part.piece->length);
-
   part.start = curr_position.offset;
   part.length = line.end.offset - curr_position.offset + 1;
 
