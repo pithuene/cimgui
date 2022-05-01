@@ -123,10 +123,22 @@ int parser_leave_block(MD_BLOCKTYPE type, void* detail, parser_run_t *run) {
 }
 
 int parser_enter_span(MD_SPANTYPE type, void* detail, parser_run_t *run) {
+  if (type == MD_SPAN_EM) {
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  } else if (type == MD_SPAN_STRONG) {
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  }
   return 0;
 }
 
 int parser_leave_span(MD_SPANTYPE type, void* detail, parser_run_t *run) {
+  if (type == MD_SPAN_EM) {
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  } else if (type == MD_SPAN_STRONG) {
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+    editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  }
   return 0;
 }
 
