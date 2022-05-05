@@ -32,7 +32,18 @@ void editor_clear(editor_t *ed);
 
 void editor_import_markdown(editor_t *ed, const char *markdown);
 // Returns 0 on success, non-zero on error
+int editor_import_markdown_filedesc(editor_t *ed, int fd);
+// Returns 0 on success, non-zero on error
 int editor_import_markdown_filepath(editor_t *ed, const char *file_path);
 void editor_export_markdown(editor_t *ed, FILE *output);
+
+/* Document open / save */
+
+// Open a file in the editor.
+// Returns whether the operation was successful.
+bool editor_open_file(editor_t *ed, const char *file_path);
+// Write open file back to disk.
+// Returns whether the operation was successful.
+bool editor_save_file(editor_t *ed);
 
 #endif

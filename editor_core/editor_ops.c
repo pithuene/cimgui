@@ -1,9 +1,14 @@
 // Functions on the editor directly
 
+#define _DEFAULT_SOURCE
 #include "editor_ops.h"
 #include "block_ops.h"
 #include "piece_ops.h"
 #include "rune_buffers.h"
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
 
 // Check whether the editor is empty. If it is, insert an empty paragraph block.
 // This is done to prevent the the user from removing all blocks,
@@ -203,6 +208,7 @@ editor_t editor_create(char *initial_content_string) {
   editor_t editor = {
     .original = original,
     .added = vec(rune_t, 64),
+    .current_file_fd = -1,
   };
 
   piecetable_piece_t *block_terminator = editor_create_new_blockterminator(&editor);
@@ -251,4 +257,24 @@ void editor_clear(editor_t *ed) {
     .piece = bt,
     .offset = 0,
   };
+}
+
+bool editor_open_file(editor_t *ed, const char *file_path) {
+  int fd = open(file_path, O_RDWR);
+  if (fd < 0) return false;
+  if (editor_import_markdown_filedesc(ed, fd) != 0) {
+    close(fd);
+    return false;
+  }
+  ed->current_file_fd = fd;
+  return true;
+}
+
+bool editor_save_file(editor_t *ed) {
+  if (ed->current_file_fd < 0) return false;
+  FILE *stream = fdopen(ed->current_file_fd, "r+");
+  if (stream == NULL) return false;
+  editor_export_markdown(ed, stream);
+  fclose(stream);
+  return true;
 }

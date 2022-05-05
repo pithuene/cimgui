@@ -11,11 +11,11 @@
 #include "../font/utf8/utf8.h"
 
 // Open a file selection dialog and import the selected markdown file.
-static void editor_open_file(editor_t *ed) {
+static void select_and_open_file(editor_t *ed) {
   nfdchar_t *path = NULL;
   nfdresult_t dialog_result = NFD_OpenDialog(NULL, NULL, &path);
   if (dialog_result == NFD_OKAY) {
-    editor_import_markdown_filepath(ed, path);
+    editor_open_file(ed, path);
     free(path);
   }
 }
@@ -614,7 +614,9 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           }
         } else if (keyevent.key == GLFW_KEY_O && keyevent.mods & GLFW_MOD_CONTROL) {
           pthread_t file_open_thread;
-          pthread_create(&file_open_thread, NULL, (void *(*)(void *)) editor_open_file, (void *) ed);
+          pthread_create(&file_open_thread, NULL, (void *(*)(void *)) select_and_open_file, (void *) ed);
+        } else if (keyevent.key == GLFW_KEY_S && keyevent.mods & GLFW_MOD_CONTROL) {
+          editor_save_file(ed);
         } else if (keyevent.key == GLFW_KEY_H && keyevent.mods & GLFW_MOD_CONTROL) {
           printf("Checking editor health:\n");
           editor_check_health(ed);

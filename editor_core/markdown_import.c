@@ -3,6 +3,7 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <assert.h>
 #include <stdbool.h>
 
@@ -170,8 +171,7 @@ void editor_import_markdown(editor_t *ed, const char *markdown) {
   ed->cursor = original_cursor;
 }
 
-int editor_import_markdown_filepath(editor_t *ed, const char *file_path) {
-  int fd = open(file_path, O_RDONLY);
+int editor_import_markdown_filedesc(editor_t *ed, int fd) {
   if (fd < 0) {
     return 1; // Could not open file
   }
@@ -208,5 +208,14 @@ int editor_import_markdown_filepath(editor_t *ed, const char *file_path) {
     .offset = 0,
   };
 
+  return 0;
+}
+
+
+int editor_import_markdown_filepath(editor_t *ed, const char *file_path) {
+  int fd = open(file_path, O_RDONLY);
+  int res = editor_import_markdown_filedesc(ed, fd);
+  if (res > 0) return res;
+  close(fd);
   return 0;
 }

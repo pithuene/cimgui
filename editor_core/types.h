@@ -57,6 +57,7 @@ typedef struct {
   block_t *first;
   block_t *last;
   editor_cursor_t cursor;
+  int current_file_fd;
 } editor_t;
 
 #endif
