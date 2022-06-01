@@ -208,7 +208,7 @@ editor_t editor_create(char *initial_content_string) {
   editor_t editor = {
     .original = original,
     .added = vec(rune_t, 64),
-    .current_file_fd = -1,
+    .current_file = NULL,
   };
 
   piecetable_piece_t *block_terminator = editor_create_new_blockterminator(&editor);
@@ -260,21 +260,22 @@ void editor_clear(editor_t *ed) {
 }
 
 bool editor_open_file(editor_t *ed, const char *file_path) {
-  int fd = open(file_path, O_RDWR);
-  if (fd < 0) return false;
-  if (editor_import_markdown_filedesc(ed, fd) != 0) {
-    close(fd);
+  FILE *file = fopen(file_path, "r+");
+  if (!file) return false;
+  if (editor_import_markdown_filestream(ed, file) != 0) {
+    fclose(file);
     return false;
   }
-  ed->current_file_fd = fd;
+  ed->current_file = file;
   return true;
 }
 
 bool editor_save_file(editor_t *ed) {
-  if (ed->current_file_fd < 0) return false;
-  FILE *stream = fdopen(ed->current_file_fd, "r+");
-  if (stream == NULL) return false;
-  editor_export_markdown(ed, stream);
-  fclose(stream);
+  if (!ed->current_file) return false;
+
+  fflush(ed->current_file);
+  ftruncate(fileno(ed->current_file), 0);
+  fseek(ed->current_file, 0, SEEK_SET);
+  editor_export_markdown(ed, ed->current_file);
   return true;
 }

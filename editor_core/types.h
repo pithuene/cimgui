@@ -4,6 +4,7 @@
 #define _EDITOR_TYPES_H
 
 #include <stdint.h>
+#include <stdio.h>
 #include "../ds/ds/vec.h"
 #include "../font/utf8/utf8.h"
 
@@ -57,7 +58,7 @@ typedef struct {
   block_t *first;
   block_t *last;
   editor_cursor_t cursor;
-  int current_file_fd;
+  FILE *current_file;
 } editor_t;
 
 #endif

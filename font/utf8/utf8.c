@@ -1,4 +1,5 @@
 #include "utf8.h"
+#include <assert.h>
 
 const rune_t RUNE_REPLACEMENT = 0xEFBFBD00;
 
@@ -52,6 +53,7 @@ rune_t rune_decode(char **input) {
   if (rune_len < 0) {
     (*input)++; // Skip invalid byte
     return RUNE_REPLACEMENT;
+    assert(false);
   }
   rune_t result = 0;
 

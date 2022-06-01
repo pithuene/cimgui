@@ -616,7 +616,9 @@ point_t editor(AppContext *app, point_t constraints, editor_t *ed) {
           pthread_t file_open_thread;
           pthread_create(&file_open_thread, NULL, (void *(*)(void *)) select_and_open_file, (void *) ed);
         } else if (keyevent.key == GLFW_KEY_S && keyevent.mods & GLFW_MOD_CONTROL) {
-          editor_save_file(ed);
+          if (!editor_save_file(ed)) {
+            printf("Could not save\n");
+          }
         } else if (keyevent.key == GLFW_KEY_H && keyevent.mods & GLFW_MOD_CONTROL) {
           printf("Checking editor health:\n");
           editor_check_health(ed);

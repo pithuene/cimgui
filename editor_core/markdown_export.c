@@ -5,13 +5,14 @@ typedef void (*block_print_t)(editor_t *, block_t *, FILE *);
 
 static void print_pieces(editor_t *ed, piecetable_piece_t *first, piecetable_piece_t *last, FILE *output) {
   piecetable_piece_t *curr_piece = first;
-  char encoded[4] = {0};
+  char *encoded = (char[4]){0};
   while (curr_piece) {
     rune_t *source = (curr_piece->from_original)
       ? ed->original
       : ed->added;
     for (int i = 0; i < curr_piece->length; i++) {
       const int index = curr_piece->start + i;
+      encoded = (char[4]){0,0,0,0};
       char *encoding_ptr = encoded;
       rune_encode(&encoding_ptr, source[index]);
       fprintf(output, "%s", encoded);

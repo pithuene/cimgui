@@ -27,4 +27,6 @@ int main(void) {
 
   application_loop(app, (AppLoopFunction) NULL, &state);
   application_free(app);
+
+  return 0;
 }

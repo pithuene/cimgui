@@ -1,8 +1,11 @@
+#define _DEFAULT_SOURCE
 #include <stdio.h>
+#define MD4C_USE_UTF8
 #include "md4c/src/md4c.h"
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <assert.h>
 #include <stdbool.h>
@@ -129,6 +132,8 @@ int parser_enter_span(MD_SPANTYPE type, void* detail, parser_run_t *run) {
   } else if (type == MD_SPAN_STRONG) {
     editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
     editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  } else if (type == MD_SPAN_A) {
+    editor_insert_before(run->ed, &run->ed->cursor, '[' << 24);
   }
   return 0;
 }
@@ -139,6 +144,19 @@ int parser_leave_span(MD_SPANTYPE type, void* detail, parser_run_t *run) {
   } else if (type == MD_SPAN_STRONG) {
     editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
     editor_insert_before(run->ed, &run->ed->cursor, '*' << 24);
+  } else if (type == MD_SPAN_A) {
+    editor_insert_before(run->ed, &run->ed->cursor, ']' << 24);
+    editor_insert_before(run->ed, &run->ed->cursor, '(' << 24);
+    MD_SPAN_A_DETAIL *adetail = detail;
+    char href[adetail->href.size + 1];
+    href[adetail->href.size] = '\0';
+    strncpy(href, adetail->href.text, adetail->href.size);
+    char *decoding_ptr = href;
+    int rune_count = runes_decoding_length(href);
+    for(int i = 0; i < rune_count; i++) {
+      editor_insert_before(run->ed, &run->ed->cursor, rune_decode(&decoding_ptr));
+    }
+    editor_insert_before(run->ed, &run->ed->cursor, ')' << 24);
   }
   return 0;
 }
@@ -171,17 +189,22 @@ void editor_import_markdown(editor_t *ed, const char *markdown) {
   ed->cursor = original_cursor;
 }
 
-int editor_import_markdown_filedesc(editor_t *ed, int fd) {
-  if (fd < 0) {
+long fsize(FILE *file) {
+  long old_position = ftell(file);
+  fseek(file, 0L, SEEK_END); // Seek to end of file
+  long file_size = ftell(file);
+  fseek(file, old_position, SEEK_SET); // Go back to where you were
+  return file_size;
+}
+
+int editor_import_markdown_filestream(editor_t *ed, FILE *file) {
+  if (!file) {
     return 1; // Could not open file
   }
 
-  struct stat stats;
-  if (fstat(fd, &stats) < 0) {
-    return 1; // Could not get file size
-  }
+  long file_size = fsize(file);
 
-  const char *file_content = mmap(NULL, stats.st_size, PROT_READ, MAP_SHARED, fd, 0);
+  const char *file_content = mmap(NULL, file_size, PROT_READ, MAP_SHARED, fileno(file), 0);
   if (file_content == MAP_FAILED) {
     return 1; // Could not map file into memory
   }
@@ -189,7 +212,7 @@ int editor_import_markdown_filedesc(editor_t *ed, int fd) {
   editor_clear(ed); // Clear the previous editor content
   editor_import_markdown(ed, file_content); // Import file
 
-  if (munmap((void *) file_content, stats.st_size) < 0) {
+  if (munmap((void *) file_content, file_size) < 0) {
     // Could not unmap the file.
     // Since this is especially bad and leaves the file open, but unusable,
     // stop execution in debug mode.
@@ -213,9 +236,9 @@ int editor_import_markdown_filedesc(editor_t *ed, int fd) {
 
 
 int editor_import_markdown_filepath(editor_t *ed, const char *file_path) {
-  int fd = open(file_path, O_RDONLY);
-  int res = editor_import_markdown_filedesc(ed, fd);
+  FILE *file = fopen(file_path, "r");
+  int res = editor_import_markdown_filestream(ed, file);
   if (res > 0) return res;
-  close(fd);
+  fclose(file);
   return 0;
 }
